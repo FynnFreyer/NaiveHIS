@@ -29,13 +29,14 @@ Please contact me via E-Mail (posted in the discussion on Moodle), or the Moodle
 
 ## Guidelines for Contributors
 
-To have a somewhat cohesive 
+To have a somewhat cohesive development experience:
 
 - Contributions should at least roughly conform to PEP8, therefore it is recommended to use a linter.
 - Code should have proper type annotations.
 - Code should be commented where necessary.
 - Commits should have a descriptive commit message.
 - The language to be used for comments and commit messages is English.
+- Tests would be nice. As long as the code is well-structured and documented we might get away without them.
 
 Nice, but optional, reading materials are [PEP8](https://peps.python.org/pep-0008/), and the [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html).
 
