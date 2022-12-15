@@ -29,3 +29,6 @@ class Order(Closeable):
 
     class Meta:
         abstract = True
+
+class Act(Closeable):
+    ...
