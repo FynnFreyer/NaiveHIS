@@ -17,16 +17,17 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-environment = read_env_file(BASE_DIR / '.env')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
+
+environment = read_env_file(BASE_DIR / '.env')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = environment['SECRET_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = environment['PROD'].lower() not in ['true', 'yes', '1', 'on'] if 'PROD' in environment else True
+DEBUG = environment.get('PROD', '').lower() not in ['true', 'yes', '1', 'on'] if 'PROD' in environment else True
 
 ALLOWED_HOSTS = [
     environment.get('HOST', 'localhost'),
@@ -51,7 +52,7 @@ INSTALLED_APPS = [
 ]
 
 
-AUTH_USER_MODEL = "HIS.HISUser"
+AUTH_USER_MODEL = "HIS.HISAccount"
 
 
 MIDDLEWARE = [
