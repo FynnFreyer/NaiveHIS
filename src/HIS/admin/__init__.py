@@ -10,7 +10,7 @@ from .accounts import HISAccountAdmin, EmployeeAdmin, DoctorAdmin, GeneralPerson
 
 # objects
 from ..models.objects import Department, DepartmentQualifications, Room, Patient
-from .objects import PatientAdmin
+from .objects import PatientAdmin, RoomAdmin
 
 # common
 admin.site.register(Address)
@@ -26,5 +26,5 @@ admin.site.register(GeneralPersonnel, GeneralPersonnelAdmin)
 # objects
 admin.site.register(Department)
 admin.site.register(DepartmentQualifications)
-admin.site.register(Room)
+admin.site.register(Room, RoomAdmin)
 admin.site.register(Patient, PatientAdmin)

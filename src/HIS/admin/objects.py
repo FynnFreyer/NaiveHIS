@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 
 from .common import PersonChangeForm, PersonCreationForm, PersonAdmin
 from ..models.common import Address, Person
-from ..models.objects import Patient, Department, DepartmentQualifications
+from ..models.objects import Patient, Department, DepartmentQualifications, Room
 
 
 class PatientChangeForm(PersonChangeForm):
@@ -61,3 +61,43 @@ class PatientAdmin(admin.ModelAdmin):
 
     add_fieldsets = fieldsets
 
+class RoomChangeForm(forms.ModelForm):
+    class Meta:
+        model = Room
+        fields = '__all__'
+
+class RoomCreationForm(forms.ModelForm):
+    class Meta:
+        model = Room
+        fields = '__all__'
+
+    def save(self, commit=True):
+        room = super().save(commit=False)
+
+        room = Room(
+            name=self.cleaned_data['name'],
+            department=self.cleaned_data['department'],
+            capacity=self.cleaned_data['capacity'],
+            usage=self.cleaned_data['usage'],
+        )
+
+        if commit:
+            room.save()
+
+        return room
+
+class RoomAdmin(admin.ModelAdmin):
+    form = RoomChangeForm
+    add_form = RoomCreationForm
+    
+    list_display = (
+        'name',
+        'department',
+        'capacity',
+        'usage',
+        'free_capacity'
+    )
+
+    class Meta:
+        model = Room
+        fields = '__all__'
