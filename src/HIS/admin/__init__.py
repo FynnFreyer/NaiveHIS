@@ -12,6 +12,10 @@ from .accounts import HISAccountAdmin, EmployeeAdmin, DoctorAdmin, GeneralPerson
 from ..models.objects import Department, DepartmentQualifications, Room, Patient
 from .objects import PatientAdmin
 
+# tasks
+from ..models.tasks import Case, Act, TransferOrder, TransportOrder, AnamnesisReport
+
+
 # common
 admin.site.register(Address)
 admin.site.register(Person, PersonAdmin)
@@ -28,3 +32,10 @@ admin.site.register(Department)
 admin.site.register(DepartmentQualifications)
 admin.site.register(Room)
 admin.site.register(Patient, PatientAdmin)
+
+# tasks
+admin.site.register(Case)
+admin.site.register(Act)
+admin.site.register(TransferOrder)
+admin.site.register(TransportOrder)
+admin.site.register(AnamnesisReport)

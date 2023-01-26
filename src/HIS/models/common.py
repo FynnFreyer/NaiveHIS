@@ -13,7 +13,7 @@ class TimeStamped(models.Model):
 
 
 class Closeable(TimeStamped):
-    closed_at: datetime = models.DateTimeField(default=None, null=True)
+    closed_at: datetime = models.DateTimeField(default=None, blank=True, null=True)
 
     @property
     def is_open(self) -> bool:
