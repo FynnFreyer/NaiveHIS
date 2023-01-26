@@ -1,1 +1,1 @@
-from HIS.models.accounts import HISAccount
+from HIS.models.accounts import HISAccount, Employee

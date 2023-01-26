@@ -30,6 +30,7 @@ class DepartmentQualifications(TimeStamped):
         verbose_name = _('Abteilungsqualifikation')
         verbose_name_plural = _('Abteilungsqualifikationen')
 
+
 class Patient(Person):
     date_of_birth: date | None = models.DateField(blank=True, null=True)
 

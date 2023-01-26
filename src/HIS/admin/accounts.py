@@ -398,6 +398,21 @@ class DoctorCreationForm(EmployeeCreationForm):
         model = Doctor
         fields = '__all__'
 
+    # def save(self, commit=True):
+    #     doctor = super().save(commit=False)
+    #     doctor.savem2m()
+    #
+    #     doctor = Doctor(
+    #
+    #     )
+    #
+    #     if commit:
+    #         doctor.save()
+    #
+    #     return doctor
+
+
+
 
 class DoctorAdmin(EmployeeAdmin):
     inlines = (DoctorQualificationInline,)
