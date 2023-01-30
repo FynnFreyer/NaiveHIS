@@ -16,6 +16,10 @@ from .objects import PatientAdmin, RoomAdmin
 from ..models.tasks import Case, Act, TransferOrder, TransportOrder, AnamnesisReport
 
 
+# tasks
+from ..models.tasks import Case, Act, TransferOrder, TransportOrder, AnamnesisReport
+
+
 # common
 admin.site.register(Address)
 admin.site.register(Person, PersonAdmin)
