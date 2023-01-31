@@ -3,32 +3,32 @@ from django.utils.translation import gettext_lazy as _
 
 from datetime import datetime
 
-from .common import TimeStampedModel, CloseableModel
+from .common import TimeStampedMixin, CloseableMixin
 from .accounts import HISAccount, Employee, GeneralPersonnel, Doctor, AdministrativeEmployee
 from .objects import Patient, Department, Room
 
 
-class Case(CloseableModel):
+class Case(CloseableMixin):
     patient: Patient = models.ForeignKey(to=Patient, on_delete=models.DO_NOTHING)
     assigned_department: Department = models.ForeignKey(to=Department, on_delete=models.DO_NOTHING)
     assigned_doctor: Doctor | None = models.ForeignKey(to=Doctor, on_delete=models.DO_NOTHING, blank=True, null=True)
 
-    class Meta(CloseableModel.Meta):
+    class Meta(CloseableMixin.Meta):
         verbose_name = _('Fall')
         verbose_name_plural = _('Fälle')
 
 
-class Act(CloseableModel):
+class Act(CloseableMixin):
     regarding: Case = models.ForeignKey(to=Case, on_delete=models.DO_NOTHING)
     initiator: HISAccount = models.ForeignKey(to=HISAccount, on_delete=models.DO_NOTHING)
     recipient: Department = models.ForeignKey(to=Department, on_delete=models.DO_NOTHING)
 
-    class Meta(CloseableModel.Meta):
+    class Meta(CloseableMixin.Meta):
         verbose_name = _('Maßnahme')
         verbose_name_plural = _('Maßnahmen')
 
 
-class Order(CloseableModel):
+class Order(CloseableMixin):
     issued_by: HISAccount = models.ForeignKey(to=HISAccount, on_delete=models.DO_NOTHING,
                                               related_name='%(class)s_issuer')
     assigned_to: HISAccount = models.ForeignKey(to=HISAccount, on_delete=models.DO_NOTHING, blank=True, null=True,
@@ -64,7 +64,7 @@ class TransferOrder(Order):
         verbose_name_plural = _('Überweisungs Aufträge')
 
 
-class Report(TimeStampedModel):
+class Report(TimeStampedMixin):
     written_by: HISAccount = models.ForeignKey(to=HISAccount, on_delete=models.DO_NOTHING)
     regarding: Act = models.ForeignKey(to=Act, on_delete=models.DO_NOTHING)
 

@@ -39,7 +39,7 @@ _UNAME_MAX_LEN = HISAccount._meta.get_field('username').max_length
 
 class BaseAccountCreationForm(forms.ModelForm):
     username = forms.CharField(max_length=_UNAME_MAX_LEN, label=_('Nutzername'))
-    email = forms.EmailField(widget=forms.EmailInput, label=_('E-Mail-Adresse'))
+    email = forms.EmailField(widget=forms.EmailInput, label=_('E-Mail-Adresse'), required=False)
     password = forms.CharField(label=_('Password'), widget=forms.PasswordInput)
     password_control = forms.CharField(label=_('Password confirmation'), widget=forms.PasswordInput)
 
@@ -55,9 +55,16 @@ class BaseAccountCreationForm(forms.ModelForm):
     def clean_username(self):
         username = self.cleaned_data.get('username')
 
-        if (not HISAccount.objects.is_valid_username(username)
-                or self.fields['username'].required and not username):
+        if (not HISAccount.objects.is_valid_username(username) and not self.instance.username == username
+                or (self.fields['username'].required and not username)):
             raise ValidationError(_('Ungültiger Nutzername'))
+
+        if not username:
+            # TODO if username not required, assert first_name, last_name
+            first_name = self.cleaned_data['first_name']
+            last_name = self.cleaned_data['last_name']
+
+            username = HISAccount.objects.get_valid_username(first_name, last_name)
 
         return username
 
@@ -107,14 +114,6 @@ class BaseAccountChangeForm(BaseAccountCreationForm):
 
         return user
 
-    def clean_username(self):
-        username = self.cleaned_data.get('username')
-
-        if not HISAccount.objects.is_valid_username(username) and not self.instance.username == username:
-            raise ValidationError(_('Ungültiger Nutzername'))
-
-        return username
-
     def clean_password_control(self):
         password_control = self._compare_password_with_control('new_password')
 
@@ -148,13 +147,15 @@ ACCOUNT_FIELDSETS = (
         'fields': (
             ('username', 'email'),
             ('password',),
-            ('new_password', 'password_control')
+            ('new_password', 'password_control'),
         )
     }),
     (_('Status'), {
-        'classes': ('collapse',),
+        'classes': ('collapse', 'wide'),
         'fields': (
             ('is_staff', 'is_active', 'is_admin'),
+            ('user_permissions',),
+            ('groups',)
         )
     }),
 )
@@ -168,9 +169,11 @@ ACCOUNT_ADD_FIELDSETS = (
         )
     }),
     (_('Status'), {
-        'classes': ('collapse',),
+        'classes': ('collapse', 'wide'),
         'fields': (
             ('is_staff', 'is_active', 'is_admin'),
+            ('user_permissions',),
+            ('groups',)
         )
     }),
 )
@@ -211,30 +214,23 @@ class HISAccountAdmin(UserAdmin):
 
 
 class EmployeeChangeForm(BaseAccountChangeForm):
-    def __int__(self, *args, **kwargs):
-        super().__int__(*args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.fields['username'].required = False
-
-    def clean_username(self):
-        username = self.cleaned_data.get('username')
-
-        if not username:
-            first_name = self.cleaned_data['first_name']
-            last_name = self.cleaned_data['last_name']
-
-            username = HISAccount.objects.get_valid_username(first_name, last_name)
-        else:
-            super().clean_username()
-
-        return username
-
+        self.fields['email'].required = True
 
     class Meta:
         model = Employee
         fields = '__all__'
 
 
+# TODO duplication
 class EmployeeCreationForm(BaseAccountCreationForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['username'].required = False
+        self.fields['email'].required = True
+
     class Meta:
         model = Employee
         fields = '__all__'
@@ -243,6 +239,18 @@ class EmployeeCreationForm(BaseAccountCreationForm):
 class EmployeeAdmin(HISAccountAdmin):
     form = EmployeeChangeForm
     add_form = EmployeeCreationForm
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+
+        # TODO not sure what happens if someone still sends the data in the request
+        if not request.user.is_superuser:
+            form.base_fields['is_admin'].disabled = True
+            form.base_fields['is_staff'].disabled = True
+            form.base_fields['user_permissions'].disabled = True
+            form.base_fields['groups'].disabled = True
+
+        return form
 
     # @formatter:off
     list_display = (
@@ -260,7 +268,10 @@ class EmployeeAdmin(HISAccountAdmin):
     fieldsets = (
         (_('Organisationseinheit'), {
             'classes': ('wide',),
-            'fields': ('department',)
+            'fields': (
+                ('department',),
+                ('rank',),
+            )
         }),
         *PERSON_FIELDSETS,
         *ADDRESS_FIELDSETS,
@@ -270,7 +281,10 @@ class EmployeeAdmin(HISAccountAdmin):
     add_fieldsets = (
         (_('Organisationseinheit'), {
             'classes': ('wide',),
-            'fields': ('department',)
+            'fields': (
+                ('department',),
+                ('rank',),
+            )
         }),
         *PERSON_FIELDSETS,
         *ADDRESS_FIELDSETS,

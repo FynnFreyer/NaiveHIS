@@ -3,7 +3,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 
-class TimeStampedModel(models.Model):
+class TimeStampedMixin(models.Model):
     created_at: datetime = models.DateTimeField(auto_now_add=True)
     updated_at: datetime = models.DateTimeField(auto_now=True)
 
@@ -12,7 +12,7 @@ class TimeStampedModel(models.Model):
         ordering = ['created_at', 'updated_at']
 
 
-class CloseableModel(TimeStampedModel):
+class CloseableMixin(TimeStampedMixin):
     closed_at: datetime = models.DateTimeField(default=None, blank=True, null=True)
 
     @property
@@ -29,7 +29,7 @@ class CloseableModel(TimeStampedModel):
     def reopen(self):
         self.closed_at = None
 
-    class Meta(TimeStampedModel.Meta):
+    class Meta(TimeStampedMixin.Meta):
         abstract = True
         ordering = ['closed_at', 'created_at', 'updated_at']
 
@@ -50,7 +50,7 @@ def _AddressMixinFactory(address_required: bool):
             """Adressfeld ohne Namen. Format ist grob an DIN 5008 angelehnt. """
             return f'{self.street} {self.street_number}\n{self.zip_code} {self.city}'
 
-        class Meta(TimeStampedModel.Meta):
+        class Meta(TimeStampedMixin.Meta):
             verbose_name = _('Adresse')
             verbose_name_plural = _('Adressen')
             abstract = True

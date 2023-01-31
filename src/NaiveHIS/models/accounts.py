@@ -1,13 +1,16 @@
+import django.contrib.auth.models
 from django.db import models
 from django.contrib import admin
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils.translation import gettext_lazy as _
 
 from itertools import count
 
-from .common import TimeStampedModel, PersonMixin, AddressRequiredMixin
+from .common import TimeStampedMixin, PersonMixin, AddressRequiredMixin
 from .objects import Department
 from .medical import Discipline
+
+from .permissions import ADMINISTRATIVE_EMPLOYEE_PERMS, DOCTOR_PERMS
 
 
 class HISAccountManager(BaseUserManager):
@@ -64,14 +67,14 @@ class HISAccountManager(BaseUserManager):
         return username
 
     def is_valid_username(self, username):
-        return not(self.all().filter(username=username))
+        return not (self.all().filter(username=username))
 
 
-class HISAccount(AbstractBaseUser, TimeStampedModel):
+class HISAccount(AbstractBaseUser, TimeStampedMixin, PermissionsMixin):
     objects = HISAccountManager()
 
     username = models.CharField(max_length=33, unique=True, verbose_name=_('Username'))
-    email = models.EmailField(unique=True, null=True, verbose_name=_('Email address'))
+    email = models.EmailField(unique=True, null=True, default=None, verbose_name=_('Email address'))
 
     is_staff = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
@@ -79,14 +82,28 @@ class HISAccount(AbstractBaseUser, TimeStampedModel):
 
     USERNAME_FIELD = 'username'
 
+    perms = ()
+
     def __str__(self):
         return self.username
 
     def has_perm(self, perm, obj=None):
-        return self.is_staff and self.is_active and self.is_admin
+        if self.is_admin:
+            return True
+
+        return perm in self.role.perms
+
+    @property
+    def role(self):
+        for klass in (HISAccount, *Employee.__subclasses__()):
+            fieldname = klass.__name__.lower()
+            if hasattr(self, fieldname):
+                return getattr(self, fieldname).__class__
+
+        return HISAccount
 
     def has_module_perms(self, app_label):
-        return self.is_staff and self.is_active
+        return self.is_admin or (self.is_staff and self.is_active)
 
     class Meta:
         verbose_name = _('KIS Nutzer')
@@ -139,10 +156,11 @@ class AdministrativeEmployee(Employee):
         TEAM_LEAD = ('team_lead', _('Teamleitung'))
         EMPLOYEE = ('employee', _('Angestellte_r'))
 
+    perms = ADMINISTRATIVE_EMPLOYEE_PERMS
+
     class Meta:
         verbose_name = _('Verwaltungsangestellte_r')
         verbose_name_plural = _('Verwaltungsangestellte')
-
 
 AdministrativeEmployee.objects = EmployeeManagerFactory(AdministrativeEmployee)()
 AdministrativeEmployee._meta.get_field('rank').choices = AdministrativeEmployee.Rank.choices
@@ -154,6 +172,8 @@ class Doctor(Employee):
         SENIOR_PHYSICIAN = ('senior', _('Oberärztliches Personal'))
         SPECIALIST_PHYSICIAN = ('specialist', _('Fachärztliches Personal'))
         JUNIOR_PHYSICIAN = ('junior', _('Assistenzärztliches Personal'))
+
+    perms = DOCTOR_PERMS
 
     @property
     @admin.display(description=_('Qualifikationen'))
@@ -169,7 +189,7 @@ Doctor.objects = EmployeeManagerFactory(Doctor)()
 Doctor._meta.get_field('rank').choices = Doctor.Rank.choices
 
 
-class DoctorQualification(TimeStampedModel):
+class DoctorQualification(TimeStampedMixin):
     doctor = models.ForeignKey(to=Doctor, on_delete=models.CASCADE)
     qualification = models.CharField(max_length=64, choices=Discipline.choices)
 
@@ -209,6 +229,7 @@ class GeneralPersonnel(Employee):
     class Meta:
         verbose_name = _('Sonstige_r Beschäftigte_r')
         verbose_name_plural = _('Sonstige Beschäftigte')
+
 
 GeneralPersonnel.objects = EmployeeManagerFactory(GeneralPersonnel)()
 GeneralPersonnel._meta.get_field('rank').choices = GeneralPersonnel.Rank.choices
