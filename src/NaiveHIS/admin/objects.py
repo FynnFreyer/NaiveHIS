@@ -2,18 +2,17 @@ from django import forms
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 
-from .common import PersonChangeForm, PersonCreationForm, PersonAdmin
-from ..models.common import Address, Person
+#from .common import PersonChangeForm, PersonCreationForm, PersonAdmin
+from ..models.common import AddressRequiredMixin, PersonMixin
 from ..models.objects import Patient, Department, DepartmentQualifications, Room
 
-
-class PatientChangeForm(PersonChangeForm):
+class PatientChangeForm(forms.ModelForm):
     class Meta:  # (PersonChangeForm.Meta):
         model = Patient
         fields = '__all__'
 
 
-class PatientCreationForm(PersonCreationForm):
+class PatientCreationForm(forms.ModelForm):
     date_of_birth = forms.DateField(required=False)
 
     class Meta:  # (PersonCreationForm.Meta):

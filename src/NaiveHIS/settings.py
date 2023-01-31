@@ -47,11 +47,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    "NaiveHIS.apps.NaiveHisConfig",
+    'NaiveHIS.apps.NaiveHisConfig',
 ]
 
 
-AUTH_USER_MODEL = "NaiveHIS.HISAccount"
+AUTH_USER_MODEL = 'NaiveHIS.HISAccount'
 
 
 MIDDLEWARE = [

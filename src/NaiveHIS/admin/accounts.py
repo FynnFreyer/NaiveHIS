@@ -2,12 +2,26 @@ from django import forms
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
+from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
+from django.contrib.auth.password_validation import validate_password
 
 from django.utils.translation import gettext_lazy as _
 
-from ..models.common import Address, Person
-from .common import PersonChangeForm, PersonCreationForm, PersonAdmin
+from ..models.common import AddressRequiredMixin, PersonMixin
+from .common import (
+    ADDRESS_FIELDSETS,
+    ADDRESS_LIST_DISPLAY,
+    # ADDRESS_LIST_FILTER,
+    ADDRESS_SEARCH_FIELDS,
+    ADDRESS_ORDERING,
+    PERSON_FIELDSETS,
+    PERSON_LIST_DISPLAY,
+    # PERSON_LIST_FILTER,
+    PERSON_SEARCH_FIELDS,
+    PERSON_ORDERING
+)
 
 from ..models.accounts import (
     HISAccount,
@@ -20,64 +34,160 @@ from ..models.accounts import (
 
 from ..models.objects import Department
 
-
-class HISAccountChangeForm(forms.ModelForm):
-    """
-    A form for updating users. Includes all the fields on
-    the user, but replaces the password field with admins
-    disabled password hash display field.
-    """
-
-    password = ReadOnlyPasswordHashField()
-
-    class Meta:
-        model = HISAccount
-        fields = '__all__'
+_UNAME_MAX_LEN = HISAccount._meta.get_field('username').max_length
 
 
-class HISAccountCreationForm(forms.ModelForm):
-    """
-    A form for creating new accounts.
-    """
-
-    username = forms.CharField(max_length=33, required=False)
-    email = forms.EmailField(widget=forms.EmailInput, required=False)
+class BaseAccountCreationForm(forms.ModelForm):
+    username = forms.CharField(max_length=_UNAME_MAX_LEN, label=_('Nutzername'))
+    email = forms.EmailField(widget=forms.EmailInput, label=_('E-Mail-Adresse'))
     password = forms.CharField(label=_('Password'), widget=forms.PasswordInput)
     password_control = forms.CharField(label=_('Password confirmation'), widget=forms.PasswordInput)
 
-    class Meta:
-        model = HISAccount
-        fields = '__all__'
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data['password_control'])
 
-    def clean_password_control(self):
-        # Check that the two password entries match
-        password = self.cleaned_data.get('password')
-        password_control = self.cleaned_data.get('password_control')
+        if commit:
+            user.save()
 
-        if password and password_control and password != password_control:
-            raise ValidationError(_("Passwords don't match"))
-
-        return password_control
+        return user
 
     def clean_username(self):
         username = self.cleaned_data.get('username')
 
-        if not HISAccount.objects.is_valid_username(username):
-            raise ValidationError(_('Invalid username'))
+        if (not HISAccount.objects.is_valid_username(username)
+                or self.fields['username'].required and not username):
+            raise ValidationError(_('Ungültiger Nutzername'))
 
         return username
 
-    def save(self, commit=True):
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        email = None if email == '' else email
+
+        if email is not None:
+            validate_email(email)
+
+        return email
+
+    def _compare_password_with_control(self, pw_fieldname: str):
+        # Check that the two password entries match
+        password = self.cleaned_data.get(pw_fieldname)
+        password_control = self.cleaned_data.get('password_control')
+
+        if password != password_control:
+            raise ValidationError(_("Passwörter stimmen nicht überein"))
+
+        return password_control
+
+    def clean_password_control(self):
+        password = self._compare_password_with_control('password')
+
+        # TODO activate
+        # User creation always needs validation
+        # validate_password(password)
+
+        return password
+
+
+class BaseAccountChangeForm(BaseAccountCreationForm):
+    password = ReadOnlyPasswordHashField(required=False, label=_('Password'))
+    new_password = forms.CharField(required=False, label=_('Change password'), widget=forms.PasswordInput)
+    password_control = forms.CharField(required=False, label=_('Password confirmation'), widget=forms.PasswordInput)
+
+    def save(self, instance=None, commit=True):
         user = super().save(commit=False)
 
-        user = self.Meta.model.objects.create_user(
-            email=self.cleaned_data['email'],
-            username=self.cleaned_data['username'],
-            password=self.cleaned_data['password_control'],
-            commit=commit
-        )
+        password = self.cleaned_data['password_control']
+        if password:
+            user.set_password(password)
+
+        if commit:
+            user.save()
 
         return user
+
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+
+        if not HISAccount.objects.is_valid_username(username) and not self.instance.username == username:
+            raise ValidationError(_('Ungültiger Nutzername'))
+
+        return username
+
+    def clean_password_control(self):
+        password_control = self._compare_password_with_control('new_password')
+
+        # TODO activate
+        # User change only needs validation if passwords are set
+        # if password_control:
+        #     validate_password(password_control)
+
+        return password_control
+
+
+class HISAccountChangeForm(BaseAccountChangeForm):
+    email = forms.EmailField(widget=forms.EmailInput, required=False)
+
+    class Meta:
+        model = HISAccount
+        fields = '__all__'
+
+
+class HISAccountCreationForm(BaseAccountCreationForm):
+    email = forms.EmailField(required=False, widget=forms.EmailInput, label=_('E-Mail-Adresse'))
+
+    class Meta:
+        model = HISAccount
+        fields = '__all__'
+
+
+ACCOUNT_FIELDSETS = (
+    (_('Account Informationen'), {
+        'classes': ('wide',),
+        'fields': (
+            ('username', 'email'),
+            ('password',),
+            ('new_password', 'password_control')
+        )
+    }),
+    (_('Status'), {
+        'classes': ('collapse',),
+        'fields': (
+            ('is_staff', 'is_active', 'is_admin'),
+        )
+    }),
+)
+
+ACCOUNT_ADD_FIELDSETS = (
+    (_('Account Informationen'), {
+        'classes': ('wide',),
+        'fields': (
+            ('username', 'email'),
+            ('password', 'password_control')
+        )
+    }),
+    (_('Status'), {
+        'classes': ('collapse',),
+        'fields': (
+            ('is_staff', 'is_active', 'is_admin'),
+        )
+    }),
+)
+
+ACCOUNT_LIST_DISPLAY = (
+    'username',
+    'email',
+    'is_staff',
+    'is_admin',
+    'is_active'
+)
+
+ACCOUNT_LIST_FILTER = (
+    'is_admin',
+    'is_staff',
+    'is_active'
+)
 
 
 class HISAccountAdmin(UserAdmin):
@@ -85,277 +195,91 @@ class HISAccountAdmin(UserAdmin):
     form = HISAccountChangeForm
     add_form = HISAccountCreationForm
 
-    list_display = (
-        'username',
-        'email',
-        'is_staff',
-        'is_admin',
-        'is_active'
-    )
+    list_display = ACCOUNT_LIST_DISPLAY
 
-    list_filter = (
-        'is_admin',
-        'is_staff',
-        'is_active'
-    )
+    list_filter = ACCOUNT_LIST_FILTER
 
     search_fields = ('email', 'username')
     ordering = ('username',)
     filter_horizontal = ()
 
-    fieldsets = (
-        (_('Account Informationen'), {
-            'classes': ('wide',),
-            'fields': (
-                ('username', 'email'),
-                ('password',)
-            )
-        }),
-        (_('Status'), {
-            'classes': ('collapse',),
-            'fields': (
-                ('is_staff', 'is_active', 'is_admin'),
-            )
-        }),
-    )
+    fieldsets = ACCOUNT_FIELDSETS
 
     # add_fieldsets is not a standard ModelAdmin attribute. UserAdmin
     # overrides get_fieldsets to use this attribute when creating a user.
-    add_fieldsets = (
-        (_('Account Informationen'), {
-            'classes': ('wide',),
-            'fields': (
-                ('username', 'email'),
-                ('password', 'password_control')
-            )
-        }),
-        (_('Status'), {
-            'classes': ('collapse',),
-            'fields': (
-                ('is_staff', 'is_active', 'is_admin'),
-            )
-        }),
-    )
-
-    class Meta:
-        ...
+    add_fieldsets = ACCOUNT_ADD_FIELDSETS
 
 
-class EmployeeChangeForm(HISAccountChangeForm):
-    class Meta(HISAccountChangeForm.Meta):
-        model = Employee
-        fields = '__all__'
-
-    person = forms.ModelChoiceField(Person.objects, label=_('Person'))
-    department = forms.ModelChoiceField(Department.objects, label=_('Abteilung'))
-    rank = forms.ChoiceField(choices=Meta.model.Rank.choices, label=_('Rang'))
-
-
-class EmployeeCreationForm(HISAccountCreationForm):
-    # Account Data
-    username = forms.CharField(max_length=33, required=False)
-    # email = forms.EmailField(widget=forms.EmailInput, required=False)
-    # password = forms.CharField(label=_('Password'), widget=forms.PasswordInput)
-    # password_control = forms.CharField(label=_('Password confirmation'), widget=forms.PasswordInput)
-
-    # Address Data
-    address = forms.ModelChoiceField(Address.objects, label=_('Adresse'), required=False)
-
-    street = forms.CharField(max_length=64, label=_('Straße'), required=False)
-    street_number = forms.IntegerField(label=_('Hausnummer'), required=False)
-    city = forms.CharField(max_length=64, label=_('Stadt'), required=False)
-    zip_code = forms.CharField(max_length=5, label=_('Postleitzahl'), required=False)
-
-    # Person Data
-    person = forms.ModelChoiceField(Person.objects, label=_('Person'), required=False)
-
-    gender = forms.ChoiceField(label=_('Geschlecht'), required=False,
-                               choices=(('m', _('männlich')),
-                                        ('w', _('weiblich')),
-                                        ('d', _('divers'))))
-
-    title = forms.CharField(max_length=32, label=_('Titel'), required=False)
-    first_name = forms.CharField(max_length=32, label=_('Vorname'), required=False)
-    last_name = forms.CharField(max_length=32, label=_('Nachname'), required=False)
-
-    # TODO when passing person, no address should be needed
-
-    # order of validation is important
-    # username might depend on person,
-    # and person might depend on address.
-    # also, cleaning depends on having the atomic parts available
-    # before the potential foreign key reference
-    field_order = [
-        'street', 'street_number', 'city', 'zip_code', 'address',
-        'gender', 'title', 'first_name', 'last_name', 'person',
-        'username', 'email', 'password', 'password_control',
-    ]
-
-    def clean_address(self):
-        existing_address = self.cleaned_data.get('address')
-
-        street = self.cleaned_data.get('street')
-        street_number = self.cleaned_data.get('street_number')
-        city = self.cleaned_data.get('city')
-        zip_code = self.cleaned_data.get('zip_code')
-
-        required_args = [street, street_number, city, zip_code]
-
-        if all(required_args):
-            created_address = Address.objects.create(
-                street=street,
-                street_number=street_number,
-                city=city,
-                zip_code=zip_code,
-            )
-        else:
-            created_address = None
-
-        if not (existing_address or created_address):
-            raise ValidationError(
-                _('Entweder muss eine existierende Adresse angegeben, oder eine neue angelegt werden.'),
-                code='invalid'
-            )
-
-        address = existing_address if existing_address else created_address
-        self.cleaned_data['address'] = address
-
-        return address
-
-    def clean_person(self):
-        existing_person = self.cleaned_data.get('person')
-
-        gender = self.cleaned_data.get('gender')
-        title = self.cleaned_data.get('title')
-        first_name = self.cleaned_data.get('first_name')
-        last_name = self.cleaned_data.get('last_name')
-        address = self.cleaned_data.get('address')
-
-        required_args = [gender, first_name, last_name]
-
-        if all(required_args):
-            created_person = Person.objects.create(
-                gender=gender,
-                title=title,
-                first_name=first_name,
-                last_name=last_name,
-                address=address,
-            )
-        else:
-            created_person = None
-
-        if not (existing_person or created_person):
-            raise ValidationError(
-                _('Entweder muss eine existierende Person angegeben, oder eine neue angelegt werden.'),
-                code='invalid'
-            )
-
-        person = existing_person if existing_person else created_person
-        self.cleaned_data['person'] = person
-
-        return person
+class EmployeeChangeForm(BaseAccountChangeForm):
+    def __int__(self, *args, **kwargs):
+        super().__int__(*args, **kwargs)
+        self.fields['username'].required = False
 
     def clean_username(self):
         username = self.cleaned_data.get('username')
 
-        person = self.cleaned_data['person']
-
-        first_name = person.first_name
-        last_name = person.last_name
-
         if not username:
-            username = HISAccount.objects.get_valid_username(first_name, last_name)
-        elif not HISAccount.objects.is_valid_username(username):
-            raise ValidationError(_(f'Nutzer "{username}" existiert bereits.'), code='duplicate')
+            first_name = self.cleaned_data['first_name']
+            last_name = self.cleaned_data['last_name']
 
-        self.cleaned_data['username'] = username
+            username = HISAccount.objects.get_valid_username(first_name, last_name)
+        else:
+            super().clean_username()
 
         return username
 
-    def save(self, commit=True, **kwargs):
-        employee = super().save(commit=False)
-
-        address = self.cleaned_data['address']
-        person = self.cleaned_data['person']
-
-        employee = self.Meta.model.objects.create_user(
-            email=self.cleaned_data['email'],
-            username=self.cleaned_data['username'],
-            password=self.cleaned_data['password_control'],
-            person=self.cleaned_data['person'],
-            department=self.cleaned_data['department'],
-            rank=self.cleaned_data['rank'],
-            **kwargs
-        )
-
-        if commit:
-            address.save()
-            person.save()
-            employee.save()
-
-        return employee
 
     class Meta:
         model = Employee
         fields = '__all__'
 
 
-class EmployeeAdmin(HISAccountAdmin, PersonAdmin):
+class EmployeeCreationForm(BaseAccountCreationForm):
+    class Meta:
+        model = Employee
+        fields = '__all__'
+
+
+class EmployeeAdmin(HISAccountAdmin):
     form = EmployeeChangeForm
     add_form = EmployeeCreationForm
 
     # @formatter:off
     list_display = (
-        'rank',
+        *PERSON_LIST_DISPLAY,
+        *HISAccountAdmin.list_display,
         'department',
-    ) + PersonAdmin.list_display + HISAccountAdmin.list_display
+    )
 
     list_filter = (
-        'rank',
         'department',
-    ) + PersonAdmin.list_filter + HISAccountAdmin.list_filter
+        # *PERSON_LIST_FILTER,
+        *HISAccountAdmin.list_filter
+    )
 
     fieldsets = (
         (_('Organisationseinheit'), {
             'classes': ('wide',),
-            'fields': ('rank', 'department')
+            'fields': ('department',)
         }),
-        (_('Persönliche Informationen'), {
-            'classes': ('wide',),
-            'fields': ('person',)
-        }),
-    ) + HISAccountAdmin.fieldsets
+        *PERSON_FIELDSETS,
+        *ADDRESS_FIELDSETS,
+        *ACCOUNT_FIELDSETS
+    )
 
     add_fieldsets = (
         (_('Organisationseinheit'), {
             'classes': ('wide',),
-            'fields': ('rank', 'department')
+            'fields': ('department',)
         }),
-        (_('Persönliche Informationen'), {
-            'classes': ('wide',),
-            'fields': (
-                'person',
-                'gender',
-                'title',
-                ('first_name', 'last_name'),
-            )
-        }),
-        (_('Wohnhaft'), {
-            'classes': ('wide',),
-            'fields': (
-                'address',
-                ('street', 'street_number'),
-                ('zip_code', 'city'),
-            )
-        }),
-    ) + HISAccountAdmin.add_fieldsets
+        *PERSON_FIELDSETS,
+        *ADDRESS_FIELDSETS,
+        *ACCOUNT_ADD_FIELDSETS
+    )
     # @formatter:on
 
-    search_fields = ('person__title', 'person__first_name', 'person__last_name') + HISAccountAdmin.search_fields
-    ordering = ('person__last_name', 'person__first_name', 'person__title') + HISAccountAdmin.ordering
-
-    class Meta(HISAccountAdmin.Meta, PersonAdmin.Meta):
-        ...
+    search_fields = PERSON_SEARCH_FIELDS + HISAccountAdmin.search_fields
+    ordering = PERSON_ORDERING + HISAccountAdmin.ordering
 
 
 class AdministrativeEmployeeChangeForm(EmployeeChangeForm):
@@ -397,21 +321,6 @@ class DoctorCreationForm(EmployeeCreationForm):
     class Meta(EmployeeCreationForm.Meta):
         model = Doctor
         fields = '__all__'
-
-    def save(self, commit=True):
-        doctor = super().save(commit=False)
-        doctor.savem2m()
-
-        doctor = Doctor(
-
-        )
-
-        if commit:
-            doctor.save()
-
-        return doctor
-
-
 
 
 class DoctorAdmin(EmployeeAdmin):
@@ -467,26 +376,26 @@ class GeneralPersonnelAdmin(EmployeeAdmin):
 
     # @formatter:off
     list_display = (
-        'function',
-    ) + EmployeeAdmin.list_display
+                       'function',
+                   ) + EmployeeAdmin.list_display
 
     list_filter = (
-        'function',
-    ) + EmployeeAdmin.list_filter
+                      'function',
+                  ) + EmployeeAdmin.list_filter
 
     fieldsets = (
-        (_('Funktion'), {
-            'classes': ('wide',),
-            'fields': ('function',)
-        }),
-    ) + EmployeeAdmin.fieldsets
+                    (_('Funktion'), {
+                        'classes': ('wide',),
+                        'fields': ('function',)
+                    }),
+                ) + EmployeeAdmin.fieldsets
 
     add_fieldsets = (
-        (_('Funktion'), {
-            'classes': ('wide',),
-            'fields': ('function',)
-        }),
-    ) + EmployeeAdmin.add_fieldsets
+                        (_('Funktion'), {
+                            'classes': ('wide',),
+                            'fields': ('function',)
+                        }),
+                    ) + EmployeeAdmin.add_fieldsets
     # @formatter:on
 
     search_fields = ('function',) + EmployeeAdmin.search_fields

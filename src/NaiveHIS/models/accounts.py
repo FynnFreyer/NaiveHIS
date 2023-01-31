@@ -5,7 +5,7 @@ from django.utils.translation import gettext_lazy as _
 
 from itertools import count
 
-from .common import TimeStamped, Person
+from .common import TimeStampedModel, PersonMixin, AddressRequiredMixin
 from .objects import Department
 from .medical import Discipline
 
@@ -39,7 +39,10 @@ class HISAccountManager(BaseUserManager):
         )
 
         user.is_admin = True
-        user.save()
+
+        if commit:
+            user.save()
+
         return user
 
     def get_valid_username(self, first_name, last_name):
@@ -61,31 +64,10 @@ class HISAccountManager(BaseUserManager):
         return username
 
     def is_valid_username(self, username):
-        for klass in [HISAccount, *Employee.__subclasses__()]:
-            valid = False
-
-            try:
-                klass.objects.get(username=username)
-            except klass.DoesNotExist:
-                # if it doesn't exist we're happy
-                valid = True
-
-            if not valid:
-                break
-
-        return valid
-
-    @staticmethod
-    def all_accounts():
-        qs = models.QuerySet()
-
-        for klass in (HISAccount, *Employee.__subclasses__()):
-            qs |= klass.objects.all()
-
-        return qs.distinct()
+        return not(self.all().filter(username=username))
 
 
-class HISAccount(AbstractBaseUser, TimeStamped):
+class HISAccount(AbstractBaseUser, TimeStampedModel):
     objects = HISAccountManager()
 
     username = models.CharField(max_length=33, unique=True, verbose_name=_('Username'))
@@ -104,65 +86,52 @@ class HISAccount(AbstractBaseUser, TimeStamped):
         return self.is_staff and self.is_active and self.is_admin
 
     def has_module_perms(self, app_label):
-        return self.is_staff and self.is_active and self.is_admin
+        return self.is_staff and self.is_active
 
     class Meta:
         verbose_name = _('KIS Nutzer')
         verbose_name_plural = _('KIS Nutzer')
 
 
-class EmployeeManager(HISAccountManager):
-    def create_user(self, username=None, email=None, password=None,
-                    person=None, department=None, rank=None):
+def EmployeeManagerFactory(klass):
+    class EmployeeManager(HISAccountManager):
+        def create_user(self, username=None, email=None, password=None,
+                        gender=None, title=None, first_name=None, last_name=None,
+                        city=None, street=None, street_number=None, zip_code=None,
+                        department=None, rank=None, commit=True, *args, **kwargs):
+            username = self.get_valid_username(
+                first_name=first_name,
+                last_name=last_name
+            ) if not username else username
 
-        username = self.get_valid_username(first_name=person.first_name, last_name=person.last_name) \
-            if not username else username
+            account = super().create_user(username=username, email=email, password=password, commit=False)
 
-        user = super().create_user(username=username, email=email, password=None, commit=False)
+            employee = klass(
+                username=account.username, email=account.email, password=account.password,
+                gender=gender, title=title, first_name=first_name, last_name=last_name,
+                city=city, street=street, street_number=street_number, zip_code=zip_code,
+                department=department, rank=rank, *args, **kwargs
+            )
 
-        user.person = person
-        user.department = department
-        user.rank = rank
+            if commit:
+                employee.save(using=employee.objects._db)
 
-        return user
+            return employee
+
+    return EmployeeManager
 
 
-# TODO over
-class Employee(HISAccount):
-    class Rank(models.TextChoices):
-        ...
-
-    person = models.OneToOneField(to=Person, on_delete=models.DO_NOTHING, verbose_name=_('Person'))
+class Employee(HISAccount, PersonMixin, AddressRequiredMixin):
     department = models.ForeignKey(to=Department, on_delete=models.DO_NOTHING, verbose_name=_('Abteilung'))
     rank = models.CharField(max_length=64, verbose_name=_('Rang'))
 
     class Meta:
+        verbose_name = _('Angestellte_r')
+        verbose_name_plural = _('Angestellte')
         abstract = True
 
 
-class AdministrativeEmployeeManager(EmployeeManager):
-    def create_user(self, username=None, email=None, password=None,
-                    person=None, department=None, rank=None, commit=True):
-        user = super().create_user(username=username, email=email, password=password,
-                                   person=person, department=department, rank=rank)
-        
-        administrative_employee = AdministrativeEmployee(
-            username=user.username, 
-            email=user.email, 
-            password=user.password,
-            person=user.person, 
-            department=user.department, 
-            rank=user.rank
-        )
-        
-        if commit:
-            administrative_employee.save(using=self._db)
-            
-        return administrative_employee
-
 class AdministrativeEmployee(Employee):
-    objects = AdministrativeEmployeeManager()
-
     class Rank(models.TextChoices):
         CEO = ('ceo', _('Geschäftsführung'))
         MEDICAL_DIRECTOR = ('medical_director', _('Ärztliche Leitung'))
@@ -170,45 +139,21 @@ class AdministrativeEmployee(Employee):
         TEAM_LEAD = ('team_lead', _('Teamleitung'))
         EMPLOYEE = ('employee', _('Angestellte_r'))
 
-    rank = models.CharField(max_length=64, choices=Rank.choices, verbose_name=_('Rang'))
-
     class Meta:
         verbose_name = _('Verwaltungsangestellte_r')
         verbose_name_plural = _('Verwaltungsangestellte')
 
 
-class DoctorManager(EmployeeManager):
-    def create_user(self, username=None, email=None, password=None,
-                    person=None, department=None, rank=None, commit=True):
-        
-        user = super().create_user(username=username, email=email, password=password,
-                                   person=person, department=department, rank=rank)
-
-        doctor = Doctor(
-            username=user.username,
-            email=user.email,
-            password=user.password,
-            person=user.person,
-            department=user.department,
-            rank=user.rank
-        )
-
-        if commit:
-            doctor.save(using=self._db)
-
-        return doctor
+AdministrativeEmployee.objects = EmployeeManagerFactory(AdministrativeEmployee)()
+AdministrativeEmployee._meta.get_field('rank').choices = AdministrativeEmployee.Rank.choices
 
 
 class Doctor(Employee):
-    objects = DoctorManager()
-
     class Rank(models.TextChoices):
         CHIEF_PHYSICIAN = ('chief', _('Chefärztliches Personal'))
         SENIOR_PHYSICIAN = ('senior', _('Oberärztliches Personal'))
         SPECIALIST_PHYSICIAN = ('specialist', _('Fachärztliches Personal'))
         JUNIOR_PHYSICIAN = ('junior', _('Assistenzärztliches Personal'))
-
-    rank = models.CharField(max_length=64, choices=Rank.choices, verbose_name=_('Rang'))
 
     @property
     @admin.display(description=_('Qualifikationen'))
@@ -220,7 +165,11 @@ class Doctor(Employee):
         verbose_name_plural = _('Ärzte')
 
 
-class DoctorQualification(TimeStamped):
+Doctor.objects = EmployeeManagerFactory(Doctor)()
+Doctor._meta.get_field('rank').choices = Doctor.Rank.choices
+
+
+class DoctorQualification(TimeStampedModel):
     doctor = models.ForeignKey(to=Doctor, on_delete=models.CASCADE)
     qualification = models.CharField(max_length=64, choices=Discipline.choices)
 
@@ -229,30 +178,7 @@ class DoctorQualification(TimeStamped):
         verbose_name_plural = _('Ärztliche Qualifikationen')
 
 
-class NurseManager(EmployeeManager):
-    def create_user(self, username=None, email=None, password=None,
-                    person=None, department=None, rank=None, commit=True):
-        user = super().create_user(username=username, email=email, password=password,
-                                   person=person, department=department, rank=rank)
-
-        nurse = Nurse(
-            username=user.username,
-            email=user.email,
-            password=user.password,
-            person=user.person,
-            department=user.department,
-            rank=user.rank
-        )
-
-        if commit:
-            nurse.save(using=self._db)
-
-        return nurse
-
-
 class Nurse(Employee):
-    objects = NurseManager()
-
     class Rank(models.TextChoices):
         LEAD_NURSE = ('lead', _('Stationsleitung Pflege'))
         TRAINED_NURSE = ('trained', _('Pflegefachpersonal'))
@@ -260,43 +186,16 @@ class Nurse(Employee):
         NURSING_STUDENT = ('learner', _('Krankenpflege-Azubi'))
         NURSING_INTERN = ('intern', _('Krankenpflege-Praktikant_in'))
 
-    rank = models.CharField(max_length=64, choices=Rank.choices, verbose_name=_('Rang'))
-
     class Meta:
         verbose_name = _('Krankenpflegekraft')
         verbose_name_plural = _('Krankenpflegekräfte')
 
 
-
-class GeneralPersonnelManager(EmployeeManager):
-    def create_user(self, username=None, email=None, password=None,
-                    person=None, department=None, rank=None, function=None, commit=True):
-
-        user = super().create_user(username=username, email=email, password=password,
-                                   person=person, department=department, rank=rank)
-
-        # if not function in GeneralPersonnel.Function:
-        #     raise ValueError(_('Sonstige Beschäftigte brauchen eine Funktion'))
-
-        general_personnel = GeneralPersonnel(
-            username=user.username,
-            email=user.email,
-            password=user.password,
-            person=user.person,
-            department=user.department,
-            rank=user.rank,
-            function=function
-        )
-
-        if commit:
-            general_personnel.save(using=self._db)
-
-        return general_personnel
+Nurse.objects = EmployeeManagerFactory(Nurse)()
+Nurse._meta.get_field('rank').choices = Nurse.Rank.choices
 
 
 class GeneralPersonnel(Employee):
-    objects = GeneralPersonnelManager()
-
     class Rank(models.TextChoices):
         TEAM_LEAD = ('team_lead', _('Teamleitung'))
         EMPLOYEE = ('employee', _('Angestellte_r'))
@@ -305,9 +204,11 @@ class GeneralPersonnel(Employee):
         TRANSPORT = ('transport', _('Transport'))
         CLEANING = ('cleaning', _('Raumpflege'))
 
-    rank = models.CharField(max_length=64, choices=Rank.choices, verbose_name=_('Rang'))
     function = models.CharField(max_length=64, choices=Function.choices, verbose_name=_('Funktion'))
 
     class Meta:
         verbose_name = _('Sonstige_r Beschäftigte_r')
         verbose_name_plural = _('Sonstige Beschäftigte')
+
+GeneralPersonnel.objects = EmployeeManagerFactory(GeneralPersonnel)()
+GeneralPersonnel._meta.get_field('rank').choices = GeneralPersonnel.Rank.choices
