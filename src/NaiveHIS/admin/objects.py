@@ -2,68 +2,27 @@ from django import forms
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 
-#from .common import PersonChangeForm, PersonCreationForm, PersonAdmin
+from .common import PERSON_FIELDSETS, ADDRESS_FIELDSETS, PERSON_LIST_DISPLAY, ADDRESS_LIST_DISPLAY
 from ..models.common import AddressRequiredMixin, PersonMixin
 from ..models.objects import Patient, Department, DepartmentQualifications, Room
 
-class PatientChangeForm(forms.ModelForm):
-    class Meta:  # (PersonChangeForm.Meta):
-        model = Patient
-        fields = '__all__'
-
-
-class PatientCreationForm(forms.ModelForm):
-    date_of_birth = forms.DateField(required=False)
-
-    class Meta:  # (PersonCreationForm.Meta):
-        model = Patient
-        fields = '__all__'
-
-    def save(self, commit=True):
-        patient = super().save(commit=False)
-
-        patient = Patient(
-            gender=patient.gender,
-            title=patient.title,
-            first_name=patient.first_name,
-            last_name=patient.last_name,
-            address=patient.address,
-            date_of_birth=self.cleaned_data['date_of_birth']
-        )
-
-        if commit:
-            patient.save()
-
-        return patient
-
 
 class PatientAdmin(admin.ModelAdmin):
-    form = PatientChangeForm
-    add_form = PatientCreationForm
-
     fieldsets = (
-        (_('Persönliche Informationen'), {
-            'classes': ('wide',),
-            'fields': (
-                ('gender', 'date_of_birth'),
-                'title',
-                ('first_name', 'last_name'),
-            )
-        }),
-        (_('Wohnhaft'), {
-            'classes': ('wide',),
-            'fields': (
-                'address',
-            )
-        })
+        *PERSON_FIELDSETS,
+        *ADDRESS_FIELDSETS,
     )
 
     add_fieldsets = fieldsets
+
+    list_display = PERSON_LIST_DISPLAY + ADDRESS_LIST_DISPLAY
+
 
 class RoomChangeForm(forms.ModelForm):
     class Meta:
         model = Room
         fields = '__all__'
+
 
 class RoomCreationForm(forms.ModelForm):
     class Meta:
@@ -85,10 +44,11 @@ class RoomCreationForm(forms.ModelForm):
 
         return room
 
+
 class RoomAdmin(admin.ModelAdmin):
     form = RoomChangeForm
     add_form = RoomCreationForm
-    
+
     list_display = (
         'name',
         'department',

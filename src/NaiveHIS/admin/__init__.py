@@ -10,11 +10,7 @@ from .objects import PatientAdmin, RoomAdmin
 
 # tasks
 from ..models.tasks import Case, Act, TransferOrder, TransportOrder, AnamnesisReport
-
-
-# tasks
-from ..models.tasks import Case, Act, TransferOrder, TransportOrder, AnamnesisReport
-
+from .tasks import CaseAdmin, ActAdmin, TransportOrderAdmin  # , TransferOrderAdmin, TransportOrderAdmin, AnamnesisReportAdmin
 
 # accounts
 admin.site.register(HISAccount, HISAccountAdmin)
@@ -26,12 +22,12 @@ admin.site.register(GeneralPersonnel, GeneralPersonnelAdmin)
 # objects
 admin.site.register(Department)
 admin.site.register(DepartmentQualifications)
-# admin.site.register(Room, RoomAdmin)
-# admin.site.register(Patient, PatientAdmin)
+admin.site.register(Room, RoomAdmin)
+admin.site.register(Patient, PatientAdmin)
 
 # tasks
-admin.site.register(Case)
-admin.site.register(Act)
+admin.site.register(Case, CaseAdmin)
+admin.site.register(Act, ActAdmin)
 admin.site.register(TransferOrder)
-admin.site.register(TransportOrder)
+admin.site.register(TransportOrder, TransportOrderAdmin)
 admin.site.register(AnamnesisReport)

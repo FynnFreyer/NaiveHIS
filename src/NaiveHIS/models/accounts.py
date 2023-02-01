@@ -10,7 +10,7 @@ from .common import TimeStampedMixin, PersonMixin, AddressRequiredMixin
 from .objects import Department
 from .medical import Discipline
 
-from .permissions import ADMINISTRATIVE_EMPLOYEE_PERMS, DOCTOR_PERMS
+from .permissions import ADMINISTRATIVE_EMPLOYEE_PERMS, DOCTOR_PERMS, PermType
 
 
 class HISAccountManager(BaseUserManager):
@@ -88,10 +88,7 @@ class HISAccount(AbstractBaseUser, TimeStampedMixin, PermissionsMixin):
         return self.username
 
     def has_perm(self, perm, obj=None):
-        if self.is_admin:
-            return True
-
-        return perm in self.role.perms
+        return self.is_admin or perm in self.role.perms
 
     @property
     def role(self):
@@ -174,6 +171,12 @@ class Doctor(Employee):
         JUNIOR_PHYSICIAN = ('junior', _('Assistenzärztliches Personal'))
 
     perms = DOCTOR_PERMS
+
+
+    def has_perm(self, perm, obj=None):
+        has_perm = False
+
+        return has_perm or super().has_perm(perm, obj)
 
     @property
     @admin.display(description=_('Qualifikationen'))

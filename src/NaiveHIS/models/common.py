@@ -4,8 +4,8 @@ from django.utils.translation import gettext_lazy as _
 
 
 class TimeStampedMixin(models.Model):
-    created_at: datetime = models.DateTimeField(auto_now_add=True)
-    updated_at: datetime = models.DateTimeField(auto_now=True)
+    created_at: datetime = models.DateTimeField(auto_now_add=True, verbose_name=_('Eröffnungszeitpunkt'))
+    updated_at: datetime = models.DateTimeField(auto_now=True, verbose_name=_('Zuletzt bearbeitet'))
 
     class Meta:
         abstract = True
@@ -13,21 +13,33 @@ class TimeStampedMixin(models.Model):
 
 
 class CloseableMixin(TimeStampedMixin):
-    closed_at: datetime = models.DateTimeField(default=None, blank=True, null=True)
+    closed_at: datetime | None = models.DateTimeField(blank=True, null=True, default=None, verbose_name=_('Abschlusszeitpunkt'))
+
+    @property
+    def opened_at(self):
+        return self.created_at
 
     @property
     def is_open(self) -> bool:
-        return self.completed_at is None
+        return self.closed_at is None
 
     @property
     def is_closed(self) -> bool:
         return not self.is_open
 
-    def close(self):
+    def close(self, *args, **kwargs):
         self.closed_at = datetime.now()
+        self.on_close(*args, **kwargs)
 
-    def reopen(self):
+    def on_close(self, *args, **kwargs):
+        pass
+
+    def reopen(self, *args, **kwargs):
         self.closed_at = None
+        self.on_reopen(*args, **kwargs)
+
+    def on_reopen(self, *args, **kwargs):
+        pass
 
     class Meta(TimeStampedMixin.Meta):
         abstract = True
@@ -69,6 +81,8 @@ class PersonMixin(models.Model):
                                        ('d', _('divers'))),
                               default='d')
 
+    date_of_birth = models.DateField(verbose_name=_('Geburtsdatum'))
+
     title = models.CharField(max_length=32, verbose_name=_('Titel'),
                              blank=True, null=True)
     first_name = models.CharField(max_length=32, verbose_name=_('Vorname'))
@@ -76,6 +90,9 @@ class PersonMixin(models.Model):
 
     # address = models.ForeignKey(to=Address, on_delete=models.DO_NOTHING, verbose_name=_('Adresse'),
     #                             blank=True, null=True)
+
+    def __str__(self):
+        return self.person
 
     @property
     def salutation(self) -> str:

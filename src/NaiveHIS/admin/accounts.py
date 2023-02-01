@@ -20,7 +20,7 @@ from .common import (
     PERSON_LIST_DISPLAY,
     # PERSON_LIST_FILTER,
     PERSON_SEARCH_FIELDS,
-    PERSON_ORDERING
+    PERSON_ORDERING, BlankableAdminMixin
 )
 
 from ..models.accounts import (
@@ -181,15 +181,13 @@ ACCOUNT_ADD_FIELDSETS = (
 ACCOUNT_LIST_DISPLAY = (
     'username',
     'email',
-    'is_staff',
-    'is_admin',
-    'is_active'
+    'is_active',
 )
 
 ACCOUNT_LIST_FILTER = (
     'is_admin',
     'is_staff',
-    'is_active'
+    'is_active',
 )
 
 
@@ -236,26 +234,27 @@ class EmployeeCreationForm(BaseAccountCreationForm):
         fields = '__all__'
 
 
-class EmployeeAdmin(HISAccountAdmin):
+ORG_FIELDSETS = (_('Organisationseinheit'), {
+    'classes': ('wide',),
+    'fields': (
+        ('department',),
+        ('rank',),
+    )
+}),
+
+
+class EmployeeAdmin(HISAccountAdmin, BlankableAdminMixin):
     form = EmployeeChangeForm
     add_form = EmployeeCreationForm
 
-    def get_form(self, request, obj=None, **kwargs):
-        form = super().get_form(request, obj, **kwargs)
-
-        # TODO not sure what happens if someone still sends the data in the request
-        if not request.user.is_superuser:
-            form.base_fields['is_admin'].disabled = True
-            form.base_fields['is_staff'].disabled = True
-            form.base_fields['user_permissions'].disabled = True
-            form.base_fields['groups'].disabled = True
-
-        return form
+    blanking_conditions = (
+        (lambda req, obj: not req.user.is_superuser, ['is_admin', 'is_staff', 'user_permissions', 'groups']),
+    )
 
     # @formatter:off
     list_display = (
-        *PERSON_LIST_DISPLAY,
         *HISAccountAdmin.list_display,
+        *PERSON_LIST_DISPLAY,
         'department',
     )
 
@@ -266,26 +265,14 @@ class EmployeeAdmin(HISAccountAdmin):
     )
 
     fieldsets = (
-        (_('Organisationseinheit'), {
-            'classes': ('wide',),
-            'fields': (
-                ('department',),
-                ('rank',),
-            )
-        }),
+        *ORG_FIELDSETS,
         *PERSON_FIELDSETS,
         *ADDRESS_FIELDSETS,
         *ACCOUNT_FIELDSETS
     )
 
     add_fieldsets = (
-        (_('Organisationseinheit'), {
-            'classes': ('wide',),
-            'fields': (
-                ('department',),
-                ('rank',),
-            )
-        }),
+        *ORG_FIELDSETS,
         *PERSON_FIELDSETS,
         *ADDRESS_FIELDSETS,
         *ACCOUNT_ADD_FIELDSETS
@@ -296,88 +283,27 @@ class EmployeeAdmin(HISAccountAdmin):
     ordering = PERSON_ORDERING + HISAccountAdmin.ordering
 
 
-class AdministrativeEmployeeChangeForm(EmployeeChangeForm):
-    class Meta(EmployeeChangeForm.Meta):
-        model = AdministrativeEmployee
-        fields = '__all__'
-
-    rank = forms.ChoiceField(choices=Meta.model.Rank.choices, label=_('Rang'))
-
-
-class AdministrativeEmployeeCreationForm(EmployeeCreationForm):
-    class Meta(EmployeeCreationForm.Meta):
-        model = AdministrativeEmployee
-        fields = '__all__'
-
-
 class AdministrativeEmployeeAdmin(EmployeeAdmin):
-    form = AdministrativeEmployeeChangeForm
-    add_form = AdministrativeEmployeeCreationForm
+    form = EmployeeChangeForm
+    add_form = EmployeeCreationForm
 
 
 class DoctorQualificationInline(admin.TabularInline):
     model = DoctorQualification
-    extra = 3
-
-    # TODO how to set the inline doctor to the doctor created by  the form?
-    #  probs have to override the form
-
-
-class DoctorChangeForm(EmployeeChangeForm):
-    class Meta(EmployeeChangeForm.Meta):
-        model = Doctor
-        fields = '__all__'
-
-    rank = forms.ChoiceField(choices=Meta.model.Rank.choices, label=_('Rang'))
-
-
-class DoctorCreationForm(EmployeeCreationForm):
-    class Meta(EmployeeCreationForm.Meta):
-        model = Doctor
-        fields = '__all__'
+    extra = 1
 
 
 class DoctorAdmin(EmployeeAdmin):
     inlines = (DoctorQualificationInline,)
 
 
-class NurseChangeForm(EmployeeChangeForm):
-    class Meta(EmployeeChangeForm.Meta):
-        model = Nurse
-        fields = '__all__'
-
-    rank = forms.ChoiceField(choices=Meta.model.Rank.choices, label=_('Rang'))
-
-
-class NurseCreationForm(EmployeeCreationForm):
-    class Meta(EmployeeCreationForm.Meta):
-        model = Nurse
-        fields = '__all__'
-
-
 class NurseAdmin(EmployeeAdmin):
-    form = NurseChangeForm
-    add_form = NurseCreationForm
-
-
-class GeneralPersonnelChangeForm(EmployeeChangeForm):
-    class Meta(EmployeeChangeForm.Meta):
-        model = GeneralPersonnel
-        fields = '__all__'
-
-    rank = forms.ChoiceField(choices=Meta.model.Rank.choices, label=_('Rang'))
+    form = EmployeeChangeForm
+    add_form = EmployeeCreationForm
 
 
 class GeneralPersonnelCreationForm(EmployeeCreationForm):
     function = forms.ChoiceField(label=_('Funktion'), choices=GeneralPersonnel.Function.choices)
-
-    def save(self, commit=True):
-        general_personnel = super().save(commit=False, function=self.cleaned_data['function'])
-
-        if commit:
-            general_personnel.save(using=self._db)
-
-        return general_personnel
 
     class Meta:
         model = GeneralPersonnel
@@ -385,7 +311,7 @@ class GeneralPersonnelCreationForm(EmployeeCreationForm):
 
 
 class GeneralPersonnelAdmin(EmployeeAdmin):
-    form = GeneralPersonnelChangeForm
+    form = EmployeeChangeForm
     add_form = GeneralPersonnelCreationForm
 
     # @formatter:off
