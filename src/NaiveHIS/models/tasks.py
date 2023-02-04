@@ -1,9 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from django.contrib import admin
 
 from datetime import datetime
-from operator import attrgetter
 from typing import Optional
 
 from .common import TimeStampedMixin, CloseableMixin, CloseableManager
