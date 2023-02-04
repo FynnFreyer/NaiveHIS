@@ -20,6 +20,12 @@ Here are basic commands to get you started.
     # project setup
     cd src
     
+    # set up the env file
+    touch .env
+    echo SECRET_KEY=so_very_secret >> .env
+    echo PROD=True >> .env
+    echo HOST=my.domain.tld >> .env
+
     # migrate the db
     python manage.py makemigrations
     python manage.py migrate
@@ -38,12 +44,6 @@ Here are basic commands to get you started.
     # >>> from init_data import init_data
     # >>> init_data()
     # >>> exit()
-    
-    # set up the env file
-    touch .env
-    echo SECRET_KEY=so_very_secret >> .env
-    echo PROD=True >> .env
-    echo HOST=my.domain.tld >> .env
 
     # run the project with gunicorn
     # (runs on 127.0.0.1:8000 and should be made accessible
