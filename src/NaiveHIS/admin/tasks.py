@@ -45,14 +45,16 @@ class CaseAdmin(admin.ModelAdmin):
     list_display = CASE_LIST_DISPLAY + CLOSEABLE_LIST_DISPLAY
 
 
-class IssuableAdmin(admin.ModelAdmin):
-    def get_form(self, request, obj=None, **kwargs):
-        form = super().get_form(request, obj, **kwargs)
+def PrefilledIDAdminMixin(field_name, disabled=True):
+    class Admin(admin.ModelAdmin):
+        def get_form(self, request, obj=None, **kwargs):
+            form = super().get_form(request, obj, **kwargs)
 
-        form.base_fields['issued_by'].initial = request.user.id
-        form.base_fields['issued_by'].disabled = True
+            form.base_fields[field_name].initial = request.user.id
+            form.base_fields[field_name].disabled = True
 
-        return form
+            return form
+    return Admin
 
 
 ORDER_LIST_DISPLAY = (
@@ -91,7 +93,7 @@ TRANSPORTORDER_ADD_FIELDSETS = generate_order_add_fieldsets(*_transport_field_se
 TRANSPORTORDER_LIST_DISPLAY = tuple(field for fields in _transport_field_sets for field in fields)
 
 
-class TransportOrderAdmin(IssuableAdmin):
+class TransportOrderAdmin(PrefilledIDAdminMixin('issued_by')):
     fieldsets = TRANSPORTORDER_FIELDSETS
     add_fieldsets = TRANSPORTORDER_ADD_FIELDSETS
 
@@ -124,7 +126,7 @@ ACT_LIST_DISPLAY = (
 )
 
 
-class ActAdmin(IssuableAdmin):
+class ActAdmin(PrefilledIDAdminMixin('initiator')):
     fieldsets = ACT_FIELDSETS + CLOSEABLE_FIELDSETS
     add_fieldsets = ACT_FIELDSETS + CLOSEABLE_FIELDSETS
 
