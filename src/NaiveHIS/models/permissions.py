@@ -40,6 +40,8 @@ DOCTOR_PERMS = (
     'NaiveHIS.add_act',
     'NaiveHIS.change_act',
     'NaiveHIS.view_act',
+    'NaiveHIS.add_patient',
+    'NaiveHIS.change_patient',
     'NaiveHIS.view_patient',
     'NaiveHIS.add_transferorder',
     'NaiveHIS.view_transferorder',
@@ -74,30 +76,7 @@ REPORT_PERMS = (
     'NaiveHIS.view_anamnesisreport',
 )
 
-NURSE_PERMS = (
-    # tasks and objects
-    'NaiveHIS.add_act',
-    'NaiveHIS.change_act',
-    'NaiveHIS.view_act',
-    'NaiveHIS.view_patient',
-    'NaiveHIS.change_patient',
-    'NaiveHIS.add_transferorder',
-    'NaiveHIS.view_transferorder',
-    'NaiveHIS.add_case',
-    'NaiveHIS.change_case',
-    'NaiveHIS.view_case',
-    # views
-    'NaiveHIS.view_doctor',
-    'NaiveHIS.view_nurse',
-    'NaiveHIS.view_generalpersonnel',
-    'NaiveHIS.view_administrativeemployee',
-    'NaiveHIS.view_department',
-    'NaiveHIS.view_room',
-    'NaiveHIS.view_departmentqualifications',
-    'NaiveHIS.view_anamnesisreport',
-    'NaiveHIS.view_transportorder',
-    'NaiveHIS.view_transferorder',
-)
+NURSE_PERMS = (*DOCTOR_PERMS,)
 
 
 class EmployeePerms:

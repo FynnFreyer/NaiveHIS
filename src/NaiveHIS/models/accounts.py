@@ -11,7 +11,7 @@ from .common import TimeStampedMixin, PersonMixin, AddressRequiredMixin
 from .objects import Department
 from .medical import Discipline
 
-from .permissions import ADMINISTRATIVE_EMPLOYEE_PERMS, DOCTOR_PERMS, PermType
+from .permissions import ADMINISTRATIVE_EMPLOYEE_PERMS, DOCTOR_PERMS, NURSE_PERMS
 
 
 class HISAccountManager(BaseUserManager):
@@ -217,6 +217,7 @@ class Nurse(Employee):
         NURSING_STUDENT = ('learner', _('Krankenpflege-Azubi'))
         NURSING_INTERN = ('intern', _('Krankenpflege-Praktikant_in'))
 
+    perms = NURSE_PERMS
     class Meta:
         verbose_name = _('Krankenpflegekraft')
         verbose_name_plural = _('Krankenpflegekräfte')
