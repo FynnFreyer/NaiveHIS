@@ -56,6 +56,7 @@ def init_data():
     )
 
     patients = [van_gogh, bohlen, rbg]
+    save_objs(patients)
 
     admissions = Department(name='Aufnahme')
     intensive_care = Department(name='Intensiv')
@@ -64,6 +65,7 @@ def init_data():
     administration = Department(name='Verwaltung')
 
     departments = [admissions, intensive_care, internal_medicine, ops, administration]
+    save_objs(departments)
 
     admissions_hall = Room(
         name='Aufnahmehalle',
@@ -108,6 +110,7 @@ def init_data():
     )
 
     rooms = [admissions_hall, op1, op2, internal1, internal2, break_room, office]
+    save_objs(rooms)
 
     default_address = {
         'city': 'Berlin',
@@ -184,8 +187,9 @@ def init_data():
     )
 
     nurses = [whitman, nightingale, dunant, karll, mahoney]
+    save_objs(nurses)
 
-    ###
+
     koch = Doctor(
         department=internal_medicine,
         rank='senior',
@@ -287,6 +291,11 @@ def init_data():
         (fleming, fleming_quals)
     ]
 
+    for doctor, quals in doctors:
+        doctor.save()
+        for qual in quals:
+            qual.save()
+
     hurtig = GeneralPersonnel(
         department=ops,
         function='transport',
@@ -316,6 +325,7 @@ def init_data():
     )
 
     transport = [hurtig, schnell]
+    save_objs(transport)
 
     gecko = AdministrativeEmployee(
         department=administration,
@@ -344,16 +354,85 @@ def init_data():
     )
 
     administrators = [gecko, durstig]
-
-    save_objs(departments)
-    save_objs(patients)
-    save_objs(rooms)
-    save_objs(nurses)
-
-    for doctor, quals in doctors:
-        doctor.save()
-        for qual in quals:
-            qual.save()
-
-    save_objs(transport)
     save_objs(administrators)
+
+    case_rbg = Case(
+        patient=rbg,
+        assigned_department=admissions,
+    )
+
+    case_rbg.save()
+
+    act_rbg = Act(
+        regarding=case_rbg,
+        initiator=whitman,
+        requesting_department=admissions,
+        executing_department=internal_medicine,
+    )
+
+    act_rbg.save()
+
+    transport_rbg_internal = TransportOrder(
+        issued_by=whitman,
+        assigned_to=hurtig,
+        assigned_at=datetime.now(),
+        regarding=act_rbg,
+        from_room=admissions_hall,
+        to_room=internal1,
+        requested_arrival=datetime.now(),
+        supervised=False,
+        closed_at=datetime.now(),
+    )
+
+    transport_rbg_internal.save()
+
+    transport_rbg_intensive = TransportOrder(
+        issued_by=avicenna,
+        assigned_to=hurtig,
+        assigned_at=datetime.now(),
+        regarding=act_rbg,
+        from_room=internal1,
+        to_room=op2,
+        requested_arrival=datetime.now(),
+        supervised=True,
+        supervised_by=avicenna,
+    )
+
+    transport_rbg_intensive.save()
+
+    case_bohlen = Case(
+        patient=bohlen,
+        assigned_department=admissions,
+    )
+    
+    case_bohlen.save()
+
+    act_bohlen = Act(
+        regarding=case_bohlen,
+        initiator=whitman,
+        requesting_department=admissions,
+        executing_department=internal_medicine,
+    )
+
+    act_bohlen.save()
+
+    transport_bohlen = TransportOrder(
+        issued_by=whitman,
+        assigned_to=schnell,
+        assigned_at=datetime.now(),
+        regarding=act_bohlen,
+        from_room=admissions_hall,
+        to_room=op1,
+        requested_arrival=datetime.now(),
+        supervised=True,
+        supervised_by=bingen,
+    )
+
+    transport_bohlen.save()
+
+    case_van_gogh = Case(
+        patient=van_gogh,
+        assigned_department=admissions
+    )
+
+    case_van_gogh.save()
