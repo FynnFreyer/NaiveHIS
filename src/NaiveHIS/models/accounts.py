@@ -11,7 +11,7 @@ from .common import TimeStampedMixin, PersonMixin, AddressRequiredMixin
 from .objects import Department
 from .medical import Discipline
 
-from .permissions import ADMINISTRATIVE_EMPLOYEE_PERMS, DOCTOR_PERMS, NURSE_PERMS
+from .permissions import ADMINISTRATIVE_EMPLOYEE_PERMS, DOCTOR_PERMS, NURSE_PERMS, GENERALPERSONNEL_PERMS
 
 
 class HISAccountManager(BaseUserManager):
@@ -236,6 +236,7 @@ class GeneralPersonnel(Employee):
         TRANSPORT = ('transport', _('Transport'))
         CLEANING = ('cleaning', _('Raumpflege'))
 
+    perms = GENERALPERSONNEL_PERMS
     function = models.CharField(max_length=64, choices=Function.choices, verbose_name=_('Funktion'))
 
     class Meta:

@@ -72,12 +72,15 @@ DOCTOR_PERMS = (
     'NaiveHIS.view_administrativeemployee',
 )
 
-REPORT_PERMS = (
-    'NaiveHIS.view_anamnesisreport',
-)
-
 NURSE_PERMS = (*DOCTOR_PERMS,)
-
+GENERALPERSONNEL_PERMS = (
+    'NaiveHIS.view_transportorder',
+    'NaiveHIS.change_transportorder',
+    'NaiveHIS.view_nurse',
+    'NaiveHIS.view_generalpersonnel',
+    'NaiveHIS.view_doctorqualification',
+    'NaiveHIS.view_administrativeemployee',
+)
 
 class EmployeePerms:
     def has_case_perm(self: 'Employee', perm_type: PermType, case: 'Case'):
