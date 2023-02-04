@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from NaiveHIS.models.accounts import (
     AdministrativeEmployee,
@@ -23,7 +23,6 @@ from NaiveHIS.models.tasks import (
     AnamnesisReport,
 )
 
-
 def save_objs(objs):
     for obj in objs:
         obj.save()
@@ -31,7 +30,7 @@ def save_objs(objs):
 
 def init_data():
     van_gogh = Patient(
-        date_of_birth=datetime.fromisoformat('1853-03-30'),
+        date_of_birth=datetime.fromisoformat('1853-03-30', ),
         first_name='Vincent',
         last_name='van Gogh',
         city='Zundert',
@@ -188,7 +187,6 @@ def init_data():
 
     nurses = [whitman, nightingale, dunant, karll, mahoney]
     save_objs(nurses)
-
 
     koch = Doctor(
         department=internal_medicine,
@@ -375,13 +373,13 @@ def init_data():
     transport_rbg_internal = TransportOrder(
         issued_by=whitman,
         assigned_to=hurtig,
-        assigned_at=datetime.now(),
+        assigned_at=datetime.now(timezone.utc),
         regarding=act_rbg,
         from_room=admissions_hall,
         to_room=internal1,
-        requested_arrival=datetime.now(),
+        requested_arrival=datetime.now(timezone.utc),
         supervised=False,
-        closed_at=datetime.now(),
+        closed_at=datetime.now(timezone.utc),
     )
 
     transport_rbg_internal.save()
@@ -389,11 +387,11 @@ def init_data():
     transport_rbg_intensive = TransportOrder(
         issued_by=avicenna,
         assigned_to=hurtig,
-        assigned_at=datetime.now(),
+        assigned_at=datetime.now(timezone.utc),
         regarding=act_rbg,
         from_room=internal1,
         to_room=op2,
-        requested_arrival=datetime.now(),
+        requested_arrival=datetime.now(timezone.utc),
         supervised=True,
         supervised_by=avicenna,
     )
@@ -404,7 +402,7 @@ def init_data():
         patient=bohlen,
         assigned_department=admissions,
     )
-    
+
     case_bohlen.save()
 
     act_bohlen = Act(
@@ -419,11 +417,11 @@ def init_data():
     transport_bohlen = TransportOrder(
         issued_by=whitman,
         assigned_to=schnell,
-        assigned_at=datetime.now(),
+        assigned_at=datetime.now(timezone.utc),
         regarding=act_bohlen,
         from_room=admissions_hall,
         to_room=op1,
-        requested_arrival=datetime.now(),
+        requested_arrival=datetime.now(timezone.utc),
         supervised=True,
         supervised_by=bingen,
     )
