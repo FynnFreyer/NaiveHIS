@@ -33,8 +33,8 @@ CASE_LIST_DISPLAY = (
     'patient',
     'assigned_department',
     'assigned_doctor',
-    'last_room',
-    'next_room',
+    _last_room,
+    _next_room,
 )
 
 
