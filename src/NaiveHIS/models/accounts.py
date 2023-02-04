@@ -108,13 +108,15 @@ class HISAccount(AbstractBaseUser, TimeStampedMixin, PermissionsMixin):
         verbose_name_plural = _('KIS Nutzer')
 
 
+# TODO
+# this doesn't even work
 def EmployeeManagerFactory(klass):
     class EmployeeManager(HISAccountManager):
         def create_user(self, username=None, email=None, password=None,
                         gender=None, title=None, first_name=None, last_name=None,
                         city=None, street=None, street_number=None, zip_code=None,
                         department=None, rank=None, commit=True, *args, **kwargs):
-            username = self.get_valid_username(
+            username = HISAccount.objects.get_valid_username(
                 first_name=first_name,
                 last_name=last_name
             ) if not username else username
@@ -127,6 +129,8 @@ def EmployeeManagerFactory(klass):
                 city=city, street=street, street_number=street_number, zip_code=zip_code,
                 department=department, rank=rank, *args, **kwargs
             )
+
+            employee.set_password(password)
 
             if commit:
                 employee.save(using=employee.objects._db)
