@@ -1,8 +1,12 @@
 from django import forms
 from django.contrib import admin
+from django.contrib.admin import display
+from django.forms import ModelChoiceField
 from django.utils.translation import gettext_lazy as _
 
 from .common import CLOSEABLE_FIELDSETS, CLOSEABLE_LIST_DISPLAY
+from ..models.accounts import GeneralPersonnel
+from ..models.tasks import Case
 
 CASE_FIELDSETS = (
     (_('Falldaten'), {
@@ -14,10 +18,23 @@ CASE_FIELDSETS = (
     }),
 )
 
+
+@display(description=_('Letzter Aufenthaltsort'))
+def _last_room(obj: Case):
+    return obj.last_room
+
+
+@display(description=_('Nächster Aufenthaltsort'))
+def _next_room(obj: Case):
+    return obj.next_room
+
+
 CASE_LIST_DISPLAY = (
     'patient',
     'assigned_department',
     'assigned_doctor',
+    'last_room',
+    'next_room',
 )
 
 
@@ -26,6 +43,16 @@ class CaseAdmin(admin.ModelAdmin):
     add_fieldsets = CASE_FIELDSETS + CLOSEABLE_FIELDSETS
 
     list_display = CASE_LIST_DISPLAY + CLOSEABLE_LIST_DISPLAY
+
+
+class IssuableAdmin(admin.ModelAdmin):
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+
+        form.base_fields['issued_by'].initial = request.user.id
+        form.base_fields['issued_by'].disabled = True
+
+        return form
 
 
 ORDER_LIST_DISPLAY = (
@@ -40,7 +67,7 @@ def generate_order_fieldsets(*fields: tuple[str, ...], add=False):
         (_('Auftragsdaten'), {
             'classes': ('wide',),
             'fields': (
-                ((('issued_by', 'regarding'),) if add else ()),
+                ('issued_by', 'regarding'),
                 ('assigned_to', 'assigned_at'),
                 *fields,
                 ('closed_at',),
@@ -55,7 +82,7 @@ def generate_order_add_fieldsets(*fields: tuple[str, ...]):
 
 _transport_field_sets = (
     ('from_room', 'to_room'),
-    ('requested_arrival_by',),
+    ('requested_arrival',),
     ('supervised', 'supervised_by'),
 )
 
@@ -64,11 +91,19 @@ TRANSPORTORDER_ADD_FIELDSETS = generate_order_add_fieldsets(*_transport_field_se
 TRANSPORTORDER_LIST_DISPLAY = tuple(field for fields in _transport_field_sets for field in fields)
 
 
-class TransportOrderAdmin(admin.ModelAdmin):
+class TransportOrderAdmin(IssuableAdmin):
     fieldsets = TRANSPORTORDER_FIELDSETS
     add_fieldsets = TRANSPORTORDER_ADD_FIELDSETS
 
     list_display = TRANSPORTORDER_LIST_DISPLAY + ORDER_LIST_DISPLAY + CLOSEABLE_LIST_DISPLAY
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+
+        transport_personnel = GeneralPersonnel.objects.filter(function='transport')
+        form.base_fields['assigned_to'] = ModelChoiceField(queryset=transport_personnel)
+
+        return form
 
 
 ACT_FIELDSETS = (
@@ -89,7 +124,7 @@ ACT_LIST_DISPLAY = (
 )
 
 
-class ActAdmin(admin.ModelAdmin):
+class ActAdmin(IssuableAdmin):
     fieldsets = ACT_FIELDSETS + CLOSEABLE_FIELDSETS
     add_fieldsets = ACT_FIELDSETS + CLOSEABLE_FIELDSETS
 

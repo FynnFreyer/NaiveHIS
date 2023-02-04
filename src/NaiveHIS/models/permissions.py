@@ -13,9 +13,6 @@ ADMINISTRATIVE_EMPLOYEE_PERMS = (
     'NaiveHIS.delete_room',
     'NaiveHIS.view_room',
     # accounts
-    'NaiveHIS.add_hisaccount',
-    'NaiveHIS.change_hisaccount',
-    'NaiveHIS.view_hisaccount',
     'NaiveHIS.add_doctor',
     'NaiveHIS.change_doctor',
     'NaiveHIS.view_doctor',
@@ -71,9 +68,10 @@ DOCTOR_PERMS = (
     'NaiveHIS.view_generalpersonnel',
     'NaiveHIS.view_doctorqualification',
     'NaiveHIS.view_administrativeemployee',
-    # todo take away
-    'NaiveHIS.add_patient',
-    'NaiveHIS.change_patient',
+)
+
+REPORT_PERMS = (
+    'NaiveHIS.view_anamnesisreport',
 )
 
 NURSE_PERMS = (
@@ -89,21 +87,16 @@ NURSE_PERMS = (
     'NaiveHIS.change_case',
     'NaiveHIS.view_case',
     # views
-    'NaiveHIS.view_act',
-    'NaiveHIS.view_department',
-    'NaiveHIS.view_patient',
-    'NaiveHIS.view_room',
-    'NaiveHIS.view_hisaccount',
     'NaiveHIS.view_doctor',
-    'NaiveHIS.view_transferorder',
-    'NaiveHIS.view_departmentqualifications',
-    'NaiveHIS.view_case',
-    'NaiveHIS.view_anamnesisreport',
-    'NaiveHIS.view_transportorder',
     'NaiveHIS.view_nurse',
     'NaiveHIS.view_generalpersonnel',
-    'NaiveHIS.view_doctorqualification',
     'NaiveHIS.view_administrativeemployee',
+    'NaiveHIS.view_department',
+    'NaiveHIS.view_room',
+    'NaiveHIS.view_departmentqualifications',
+    'NaiveHIS.view_anamnesisreport',
+    'NaiveHIS.view_transportorder',
+    'NaiveHIS.view_transferorder',
 )
 
 

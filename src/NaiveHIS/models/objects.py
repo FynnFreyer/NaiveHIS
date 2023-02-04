@@ -1,6 +1,3 @@
-from operator import attrgetter
-from typing import Optional
-
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -40,35 +37,6 @@ class PatientManager(models.Manager):
 
 
 class Patient(PersonMixin, AddressOptionalMixin):
-    @property
-    def open_cases(self) -> list['Case']:
-        return sorted([case for case in self.case_set.all() if case.is_open], key=attrgetter('opened_at'))
-
-    @property
-    def closed_cases(self) -> list['Case']:
-        return sorted([case for case in self.case_set.all() if case.is_closed], key=attrgetter('closed_at'))
-
-    @property
-    def last_room(self) -> Optional['Room']:
-        latest_open_case = self.open_cases[-1] if self.open_cases else None
-        latest_open_case.objects.filter()
-        raise NotImplemented
-
-    @property
-    def next_room(self) -> Optional['Room']:
-        open_transports = self.case_set.filter(is_open=True, act__transportorder__is_closed=False)
-        raise NotImplemented
-
-    @property
-    def is_in_transit_or_not_in_house(self) -> bool:
-        return self.last_room != self.next_room
-
-    @property
-    def current_room(self) -> Optional['Room']:
-        if self.last_room == self.next_room:
-            return self.last_room
-        return None
-
     class Meta:
         ordering = ('last_name',)
         verbose_name = _('Patient_in')

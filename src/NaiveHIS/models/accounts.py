@@ -2,6 +2,7 @@ import django.contrib.auth.models
 from django.db import models
 from django.contrib import admin
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.db.models import QuerySet
 from django.utils.translation import gettext_lazy as _
 
 from itertools import count
@@ -131,6 +132,9 @@ def EmployeeManagerFactory(klass):
                 employee.save(using=employee.objects._db)
 
             return employee
+
+        def get_queryset(self):
+            return QuerySet(model=klass)
 
     return EmployeeManager
 

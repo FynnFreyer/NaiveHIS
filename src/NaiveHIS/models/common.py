@@ -12,8 +12,19 @@ class TimeStampedMixin(models.Model):
         ordering = ['created_at', 'updated_at']
 
 
+class CloseableManager(models.Manager):
+    @property
+    def open_objects(self):
+        return self.filter(closed_at=None)
+
+    @property
+    def closed_objects(self):
+        return self.exclude(closed_at=None)
+
+
 class CloseableMixin(TimeStampedMixin):
-    closed_at: datetime | None = models.DateTimeField(blank=True, null=True, default=None, verbose_name=_('Abschlusszeitpunkt'))
+    closed_at: datetime | None = models.DateTimeField(blank=True, null=True, default=None,
+                                                      verbose_name=_('Abschlusszeitpunkt'))
 
     @property
     def opened_at(self):
