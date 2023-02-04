@@ -4,6 +4,54 @@ This project strives to implement a ***very*** simple Hospital Information Syste
 
 Development happens in the context of a university lecture about informational systems in healthcare (Informationssysteme im Gesundheitswesen), given by [Prof. Dr. Schaaf](https://www.htw-berlin.de/hochschule/personen/person/?eid=4298) at the HTW Berlin.
 
+# Getting started
+
+Here are basic commands to get you started.
+
+    # clone the repo
+    git clone https://github.com/FynnFreyer/NaiveHIS.git
+    cd NaiveHIS
+
+    # setup a venv and install the dependencies
+    python -m venv venv
+    source venv/bin/activate
+    python -m pip install -r requirements.txt
+
+    # project setup
+    cd src
+    
+    # migrate the db
+    python manage.py makemigrations
+    python manage.py migrate
+
+    # get static files
+    mkdir static
+    python manage.py collectstatic
+
+    # create an admin account
+    python manage.py createsuperuser
+
+    # optionally load some play data
+    #
+    # python manage.py shell
+    # 
+    # >>> from init_data import init_data
+    # >>> init_data()
+    # >>> exit()
+    
+    # set up the env file
+    touch .env
+    echo SECRET_KEY=so_very_secret >> .env
+    echo PROD=True >> .env
+    echo HOST=my.domain.tld >> .env
+
+    # run the project with gunicorn
+    # (runs on 127.0.0.1:8000 and should be made accessible
+    #  via reverse proxy under my.domain.tld)
+    gunicorn NaiveHIS.wsgi
+    
+
+
 # Current State
 
 This is basically what I handed in for another course, but it needs some modification to be even slightly usable.
