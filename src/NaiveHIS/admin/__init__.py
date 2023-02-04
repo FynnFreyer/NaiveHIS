@@ -1,7 +1,8 @@
 from django.contrib import admin
+from django.utils.translation import gettext_lazy as _
 
 # accounts
-from ..models.accounts import HISAccount, Employee, AdministrativeEmployee, Doctor, Nurse, GeneralPersonnel
+from ..models.accounts import HISAccount, AdministrativeEmployee, Doctor, Nurse, GeneralPersonnel
 from .accounts import HISAccountAdmin, AdministrativeEmployeeAdmin, DoctorAdmin, NurseAdmin, GeneralPersonnelAdmin
 
 # objects
@@ -10,7 +11,12 @@ from .objects import PatientAdmin, RoomAdmin
 
 # tasks
 from ..models.tasks import Case, Act, TransferOrder, TransportOrder, AnamnesisReport
-from .tasks import CaseAdmin, ActAdmin, TransportOrderAdmin  # , TransferOrderAdmin, TransportOrderAdmin, AnamnesisReportAdmin
+from .tasks import CaseAdmin, ActAdmin, TransportOrderAdmin
+# , TransferOrderAdmin, AnamnesisReportAdmin
+
+admin.site.site_header = _('NaiveHIS')
+admin.site.site_title = _('KIS Verwaltung')
+admin.site.index_title = _('KIS Verwaltung')
 
 # accounts
 admin.site.register(HISAccount, HISAccountAdmin)
