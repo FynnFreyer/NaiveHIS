@@ -37,7 +37,7 @@ INTERNAL_IPS = [
     '127.0.0.1'
 ]
 
-CSRF_TRUSTED_ORIGINS = [environment.get('HOST', 'localhost')]
+CSRF_TRUSTED_ORIGINS = ['https://' + environment.get('HOST', 'localhost')]
 CSRF_COOKIE_DOMAIN = '.' + environment.get('HOST', 'localhost')
 
 # Application definition
