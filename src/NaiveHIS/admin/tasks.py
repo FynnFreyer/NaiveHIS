@@ -137,31 +137,6 @@ class ExaminationOrderAdmin(OrderAdmin):
     list_display = ORDER_LIST_DISPLAY + CLOSEABLE_LIST_DISPLAY
 
 
-# ACT_FIELDSETS = (
-#     (_('Maßnahme'), {
-#         'classes': ('wide',),
-#         'fields': (
-#             ('initiator', 'requesting_department'),
-#             ('case',),
-#             ('executing_department',),
-#         )
-#     }),
-# )
-#
-# ACT_LIST_DISPLAY = (
-#     'case',
-#     'executing_department',
-#     'requesting_department',
-# )
-#
-#
-# class ActAdmin(PrefilledFieldAdminMixin('initiator')):
-#     fieldsets = ACT_FIELDSETS + CLOSEABLE_FIELDSETS
-#     add_fieldsets = ACT_FIELDSETS + CLOSEABLE_FIELDSETS
-#
-#     list_display = ACT_LIST_DISPLAY + CLOSEABLE_LIST_DISPLAY
-
-
 def generate_report_fieldsets(*fields: tuple[str, ...]):
     return (
         (_('Reportdaten'), {

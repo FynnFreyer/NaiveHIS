@@ -41,36 +41,10 @@ class Case(CloseableMixin):
 
         return None
 
-    # @property
-    # def current_room(self) -> Optional['Room']:
-    #     if self.last_room == self.next_room:
-    #         return self.last_room
-    #     return None
-
     class Meta(CloseableMixin.Meta):
         verbose_name = _('Fall')
         verbose_name_plural = _('Fälle')
         unique_together = ('patient', 'closed_at')
-
-
-# class Act(CloseableMixin):
-#     objects = CloseableManager()
-#
-#     case: Case = models.ForeignKey(to=Case, on_delete=models.DO_NOTHING, verbose_name=_('Betroffener Fall'))
-#     initiator: HISAccount = models.ForeignKey(to=HISAccount, on_delete=models.DO_NOTHING, verbose_name=_('Initiator'))
-#     requesting_department: Department = models.ForeignKey(to=Department, on_delete=models.DO_NOTHING,
-#                                                           related_name='requesting_department',
-#                                                           verbose_name=_('Ersuchende Abteilung'))
-#     executing_department: Department = models.ForeignKey(to=Department, on_delete=models.DO_NOTHING,
-#                                                          related_name='executing_department',
-#                                                          verbose_name=_('Ausführende Abteilung'))
-#
-#     def __str__(self):
-#         return f'Maßnahme {self.id} zu {self.case}'
-#
-#     class Meta(CloseableMixin.Meta):
-#         verbose_name = _('Maßnahme')
-#         verbose_name_plural = _('Maßnahmen')
 
 
 class Order(CloseableMixin):
@@ -160,16 +134,6 @@ class AnamnesisReport(Report):
         verbose_name_plural = _('Anamnesereports')
 
 
-class DiagnosisReport(Report):
-    treatment_order: TreatmentOrder = models.ForeignKey(to=TreatmentOrder,
-                                                        on_delete=models.DO_NOTHING)  # , verbose_name=_('Behandlungsauftrag'))
-    text: str = models.TextField(verbose_name=_('Diagnose'))
-
-    class Meta(Report.Meta):
-        verbose_name = _('Diagnosereport')
-        verbose_name_plural = _('Diagnosereports')
-
-
 class ExaminationReport(Report):
     examination_order: ExaminationOrder = models.ForeignKey(to=ExaminationOrder,
                                                             on_delete=models.DO_NOTHING)  # , verbose_name=_('Behandlungsauftrag'))
@@ -178,6 +142,16 @@ class ExaminationReport(Report):
     class Meta(Report.Meta):
         verbose_name = _('Untersuchungsreport')
         verbose_name_plural = _('Untersuchungsreports')
+
+
+class DiagnosisReport(Report):
+    treatment_order: TreatmentOrder = models.ForeignKey(to=TreatmentOrder,
+                                                        on_delete=models.DO_NOTHING)  # , verbose_name=_('Behandlungsauftrag'))
+    text: str = models.TextField(verbose_name=_('Diagnose'))
+
+    class Meta(Report.Meta):
+        verbose_name = _('Diagnosereport')
+        verbose_name_plural = _('Diagnosereports')
 
 
 class TherapyReport(Report):
