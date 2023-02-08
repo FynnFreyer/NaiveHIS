@@ -53,24 +53,24 @@ class Case(CloseableMixin):
         unique_together = ('patient', 'closed_at')
 
 
-class Act(CloseableMixin):
-    objects = CloseableManager()
-
-    regarding: Case = models.ForeignKey(to=Case, on_delete=models.DO_NOTHING, verbose_name=_('Betroffener Fall'))
-    initiator: HISAccount = models.ForeignKey(to=HISAccount, on_delete=models.DO_NOTHING, verbose_name=_('Initiator'))
-    requesting_department: Department = models.ForeignKey(to=Department, on_delete=models.DO_NOTHING,
-                                                          related_name='requesting_department',
-                                                          verbose_name=_('Ersuchende Abteilung'))
-    executing_department: Department = models.ForeignKey(to=Department, on_delete=models.DO_NOTHING,
-                                                         related_name='executing_department',
-                                                         verbose_name=_('Ausführende Abteilung'))
-
-    def __str__(self):
-        return f'Maßnahme {self.id} zu {self.regarding}'
-
-    class Meta(CloseableMixin.Meta):
-        verbose_name = _('Maßnahme')
-        verbose_name_plural = _('Maßnahmen')
+# class Act(CloseableMixin):
+#     objects = CloseableManager()
+#
+#     case: Case = models.ForeignKey(to=Case, on_delete=models.DO_NOTHING, verbose_name=_('Betroffener Fall'))
+#     initiator: HISAccount = models.ForeignKey(to=HISAccount, on_delete=models.DO_NOTHING, verbose_name=_('Initiator'))
+#     requesting_department: Department = models.ForeignKey(to=Department, on_delete=models.DO_NOTHING,
+#                                                           related_name='requesting_department',
+#                                                           verbose_name=_('Ersuchende Abteilung'))
+#     executing_department: Department = models.ForeignKey(to=Department, on_delete=models.DO_NOTHING,
+#                                                          related_name='executing_department',
+#                                                          verbose_name=_('Ausführende Abteilung'))
+#
+#     def __str__(self):
+#         return f'Maßnahme {self.id} zu {self.case}'
+#
+#     class Meta(CloseableMixin.Meta):
+#         verbose_name = _('Maßnahme')
+#         verbose_name_plural = _('Maßnahmen')
 
 
 class Order(CloseableMixin):
@@ -82,10 +82,10 @@ class Order(CloseableMixin):
                                                 related_name='%(class)s_assignee', verbose_name=_('Auftragnehmer'))
 
     assigned_at: datetime = models.DateTimeField(blank=True, null=True, verbose_name=_('Zuweisungszeitpunkt'))
-    regarding: Act = models.ForeignKey(to=Act, on_delete=models.DO_NOTHING, verbose_name=_('Betroffene Maßnahme'))
+    case: Case = models.ForeignKey(to=Case, on_delete=models.DO_NOTHING, verbose_name=_('Betroffener Fall'))
 
     def __str__(self):
-        return f'Auftrag von {self.issued_by}, an {self.assigned_to}, betreffs {self.regarding}'
+        return f'Auftrag von {self.issued_by}, an {self.assigned_to}, betreffs {self.case}'
 
     class Meta:
         verbose_name = _('Auftrag')
@@ -104,11 +104,11 @@ class TransportOrder(Order):
                                               verbose_name=_('Beaufsichtigt durch'), blank=True, null=True)
 
     def __str__(self):
-        return f'Transportauftrag für {self.regarding.regarding.patient}, von {self.from_room}, nach {self.to_room}'
+        return f'Transportauftrag für {self.case.patient}, von {self.from_room}, nach {self.to_room}'
 
     class Meta(Order.Meta):
-        verbose_name = _('Transport Auftrag')
-        verbose_name_plural = _('Transport Aufträge')
+        verbose_name = _('Transportauftrag')
+        verbose_name_plural = _('Transportaufträge')
 
 
 class TransferOrder(Order):
@@ -118,27 +118,91 @@ class TransferOrder(Order):
                                                   related_name='to_department', verbose_name=_('Nach'))
 
     class Meta(Order.Meta):
-        verbose_name = _('Überweisungs Auftrag')
-        verbose_name_plural = _('Überweisungs Aufträge')
+        verbose_name = _('Überweisungsauftrag')
+        verbose_name_plural = _('Überweisungsaufträge')
 
 
-class Assignment(Order):
-    from_doctor: Doctor = models.ForeignKey(to=Doctor, null=True, on_delete=models.DO_NOTHING,
-                                            related_name='from_doctor')
-    to_doctor: Doctor = models.ForeignKey(to=Doctor, on_delete=models.DO_NOTHING, related_name='to_doctor')
+class TreatmentOrder(Order):
+    doctor: Doctor = models.ForeignKey(to=Doctor, on_delete=models.DO_NOTHING, verbose_name=_('Behandelnder Arzt'))
+
+    class Meta(Order.Meta):
+        verbose_name = _('Behandlungsauftrag')
+        verbose_name_plural = _('Behandlungsaufträge')
+        # unique_together = ('closed_at', 'case')
+
+
+class ExaminationOrder(Order):
+    description: str = models.TextField(verbose_name=_('Untersuchungsanfrage'))
+
+    class Meta(Order.Meta):
+        verbose_name = _('Untersuchungsauftrag')
+        verbose_name_plural = _('Untersuchungsaufträge')
 
 
 class Report(TimeStampedMixin):
     written_by: HISAccount = models.ForeignKey(to=HISAccount, on_delete=models.DO_NOTHING, verbose_name=_('Author'))
-    regarding: Act = models.ForeignKey(to=Act, on_delete=models.DO_NOTHING, verbose_name=_('Betroffener Fall'))
+    case: Case = models.ForeignKey(to=Case, on_delete=models.DO_NOTHING, verbose_name=_('Betroffener Fall'))
+
+    def __str__(self):
+        return f'Report {self.id} von {self.written_by}, betreffend {self.patient}, geschrieben am {self.created_at.date()}'
 
     class Meta:
         abstract = True
 
 
 class AnamnesisReport(Report):
-    anamnesis_text: str = models.TextField(verbose_name=_('Anamnese'))
+    treatment_order: TreatmentOrder = models.ForeignKey(to=TreatmentOrder,
+                                                        on_delete=models.DO_NOTHING)  # , verbose_name=_('Behandlungsauftrag'))
+    text: str = models.TextField(verbose_name=_('Anamnese'))
 
     class Meta(Report.Meta):
-        verbose_name = _('Anamnese-Report')
-        verbose_name_plural = _('Anamnese-Reports')
+        verbose_name = _('Anamnesereport')
+        verbose_name_plural = _('Anamnesereports')
+
+
+class DiagnosisReport(Report):
+    treatment_order: TreatmentOrder = models.ForeignKey(to=TreatmentOrder,
+                                                        on_delete=models.DO_NOTHING)  # , verbose_name=_('Behandlungsauftrag'))
+    text: str = models.TextField(verbose_name=_('Diagnose'))
+
+    class Meta(Report.Meta):
+        verbose_name = _('Diagnosereport')
+        verbose_name_plural = _('Diagnosereports')
+
+
+class ExaminationReport(Report):
+    examination_order: ExaminationOrder = models.ForeignKey(to=ExaminationOrder,
+                                                            on_delete=models.DO_NOTHING)  # , verbose_name=_('Behandlungsauftrag'))
+    text: str = models.TextField(verbose_name=_('Therapie'))
+
+    class Meta(Report.Meta):
+        verbose_name = _('Untersuchungsreport')
+        verbose_name_plural = _('Untersuchungsreports')
+
+
+class TherapyReport(Report):
+    treatment_order: TreatmentOrder = models.ForeignKey(to=TreatmentOrder,
+                                                        on_delete=models.DO_NOTHING)  # , verbose_name=_('Behandlungsauftrag'))
+    text: str = models.TextField(verbose_name=_('Therapie'))
+
+    class Meta(Report.Meta):
+        verbose_name = _('Therapiereport')
+        verbose_name_plural = _('Therapiereports')
+
+
+class FindingsReport(Report):
+    diagnosis_report: DiagnosisReport = models.ForeignKey(
+        to=DiagnosisReport, on_delete=models.DO_NOTHING,
+        related_name='%(class)s_diagnosis', verbose_name=_('Befund')
+    )
+
+    therapy_report: TherapyReport = models.ForeignKey(
+        to=DiagnosisReport, on_delete=models.DO_NOTHING,
+        related_name='%(class)s_therapy', verbose_name=_('Therapiemaßnahmen')
+    )
+
+    text: str = models.TextField(verbose_name=_('Sonstige Anmerkungen'))
+
+    class Meta(Report.Meta):
+        verbose_name = _('Arztbrief')
+        verbose_name_plural = _('Arztbriefe')
