@@ -72,43 +72,43 @@ def init_data():
 
     admissions_hall = Room(
         name='Aufnahmehalle',
-        department=admissions,
+        department_id=admissions.id,
         capacity=30,
     )
 
     op1 = Room(
         name='OP-Raum 1',
-        department=intensive_care,
+        department_id=intensive_care.id,
         capacity=1,
     )
 
     op2 = Room(
         name='OP-Raum 2',
-        department=intensive_care,
+        department_id=intensive_care.id,
         capacity=1,
     )
 
     internal1 = Room(
         name='Raum 1 - Internistische Station',
-        department=internal_medicine,
+        department_id=internal_medicine.id,
         capacity=4,
     )
 
     internal2 = Room(
         name='Raum 2 - Internistische Station',
-        department=internal_medicine,
+        department_id=internal_medicine.id,
         capacity=4,
     )
 
     break_room = Room(
         name='Pausenraum',
-        department=ops,
+        department_id=ops.id,
         capacity=10,
     )
 
     office = Room(
         name='Büro',
-        department=administration,
+        department_id=administration.id,
         capacity=4,
     )
 
@@ -125,7 +125,7 @@ def init_data():
     default_dob = datetime.fromisoformat('1891-07-01')
 
     whitman = Nurse(
-        department=admissions,
+        department_id=admissions.id,
         rank='helper',
         password='test',
         username='whitman',
@@ -138,7 +138,7 @@ def init_data():
     )
 
     nightingale = Nurse(
-        department=intensive_care,
+        department_id=intensive_care.id,
         rank='lead',
         password='test',
         username='nightingale',
@@ -151,7 +151,7 @@ def init_data():
     )
 
     dunant = Nurse(
-        department=intensive_care,
+        department_id=intensive_care.id,
         rank='helper',
         password='test',
         username='dunant',
@@ -164,7 +164,7 @@ def init_data():
     )
 
     karll = Nurse(
-        department=internal_medicine,
+        department_id=internal_medicine.id,
         rank='trained',
         password='test',
         username='karll',
@@ -177,7 +177,7 @@ def init_data():
     )
 
     mahoney = Nurse(
-        department=internal_medicine,
+        department_id=internal_medicine.id,
         rank='trained',
         password='test',
         username='mahoney',
@@ -190,10 +190,9 @@ def init_data():
     )
 
     nurses = [whitman, nightingale, dunant, karll, mahoney]
-    save_objs(nurses)
 
     koch = Doctor(
-        department=internal_medicine,
+        department_id=internal_medicine.id,
         rank='senior',
         password='test',
         username='koch',
@@ -213,7 +212,7 @@ def init_data():
     )
 
     hippocrates = Doctor(
-        department=intensive_care,
+        department_id=intensive_care.id,
         rank='chief',
         password='test',
         username='hippocrates',
@@ -231,7 +230,7 @@ def init_data():
     )
 
     avicenna = Doctor(
-        department=internal_medicine,
+        department_id=internal_medicine.id,
         rank='chief',
         password='test',
         username='avicenna',
@@ -249,7 +248,7 @@ def init_data():
     )
 
     bingen = Doctor(
-        department=intensive_care,
+        department_id=intensive_care.id,
         rank='senior',
         password='test',
         username='bingen',
@@ -267,7 +266,7 @@ def init_data():
     )
 
     fleming = Doctor(
-        department=admissions,
+        department_id=admissions.id,
         rank='specialist',
         password='test',
         username='fleming',
@@ -293,20 +292,8 @@ def init_data():
         fleming,
     ]
 
-    save_objs(doctors)
-
-    quals = [
-        *koch_quals,
-        *hippocrates_quals,
-        *avicenna_quals,
-        *bingen_quals,
-        *fleming_quals,
-    ]
-
-    save_objs(quals)
-
     hurtig = GeneralPersonnel(
-        department=ops,
+        department_id=ops.id,
         function='transport',
         rank='employee',
         password='test',
@@ -320,7 +307,7 @@ def init_data():
     )
 
     schnell = GeneralPersonnel(
-        department=ops,
+        department_id=ops.id,
         function='transport',
         rank='employee',
         password='test',
@@ -334,10 +321,9 @@ def init_data():
     )
 
     transport = [hurtig, schnell]
-    save_objs(transport)
 
     gecko = AdministrativeEmployee(
-        department=administration,
+        department_id=administration.id,
         rank='ceo',
         password='test',
         username='gecko',
@@ -350,7 +336,7 @@ def init_data():
     )
 
     durstig = AdministrativeEmployee(
-        department=administration,
+        department_id=administration.id,
         rank='employee',
         password='test',
         username='durstig',
@@ -363,7 +349,6 @@ def init_data():
     )
 
     administrators = [gecko, durstig]
-    save_objs(administrators)
 
     users = [
         *nurses,
@@ -374,11 +359,22 @@ def init_data():
 
     for user in users:
         user.set_password('test')
-        user.save()
+
+    save_objs(users)
+
+    quals = [
+        *koch_quals,
+        *hippocrates_quals,
+        *avicenna_quals,
+        *bingen_quals,
+        *fleming_quals,
+    ]
+
+    save_objs(quals)
 
     case_rbg = Case(
         patient=rbg,
-        assigned_department=admissions,
+        assigned_department_id=admissions.id,
     )
 
     case_rbg.save()
@@ -413,7 +409,7 @@ def init_data():
 
     case_bohlen = Case(
         patient=bohlen,
-        assigned_department=admissions,
+        assigned_department_id=admissions.id,
     )
 
     case_bohlen.save()
