@@ -16,11 +16,15 @@ from NaiveHIS.models.objects import (
 
 from NaiveHIS.models.tasks import (
     Case,
-    Act,
     TransportOrder,
     TransferOrder,
-    Report,
+    TreatmentOrder,
+    ExaminationOrder,
     AnamnesisReport,
+    DiagnosisReport,
+    ExaminationReport,
+    TherapyReport,
+    FindingsReport,
 )
 
 def save_objs(objs):
@@ -370,6 +374,7 @@ def init_data():
 
     for user in users:
         user.set_password('test')
+        user.save()
 
     case_rbg = Case(
         patient=rbg,
@@ -378,20 +383,11 @@ def init_data():
 
     case_rbg.save()
 
-    act_rbg = Act(
-        regarding=case_rbg,
-        initiator=whitman,
-        requesting_department=admissions,
-        executing_department=internal_medicine,
-    )
-
-    act_rbg.save()
-
     transport_rbg_internal = TransportOrder(
         issued_by=whitman,
         assigned_to=hurtig,
         assigned_at=datetime.now(timezone.utc),
-        regarding=act_rbg,
+        case=case_rbg,
         from_room=admissions_hall,
         to_room=internal1,
         requested_arrival=datetime.now(timezone.utc),
@@ -405,7 +401,7 @@ def init_data():
         issued_by=avicenna,
         assigned_to=hurtig,
         assigned_at=datetime.now(timezone.utc),
-        regarding=act_rbg,
+        case=case_rbg,
         from_room=internal1,
         to_room=op2,
         requested_arrival=datetime.now(timezone.utc),
@@ -422,20 +418,11 @@ def init_data():
 
     case_bohlen.save()
 
-    act_bohlen = Act(
-        regarding=case_bohlen,
-        initiator=whitman,
-        requesting_department=admissions,
-        executing_department=internal_medicine,
-    )
-
-    act_bohlen.save()
-
     transport_bohlen = TransportOrder(
         issued_by=whitman,
         assigned_to=schnell,
         assigned_at=datetime.now(timezone.utc),
-        regarding=act_bohlen,
+        case=case_bohlen,
         from_room=admissions_hall,
         to_room=op1,
         requested_arrival=datetime.now(timezone.utc),
