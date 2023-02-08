@@ -21,8 +21,7 @@ Here are basic commands to get you started.
     cd src
     
     # set up the env file
-    touch .env
-    echo SECRET_KEY=so_very_secret >> .env
+    echo SECRET_KEY=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 64) >> .env
     echo PROD=True >> .env
     echo HOST=my.domain.tld >> .env
 
@@ -46,8 +45,9 @@ Here are basic commands to get you started.
     # >>> exit()
 
     # run the project with gunicorn
-    # (runs on 127.0.0.1:8000 and should be made accessible
-    #  via reverse proxy under my.domain.tld)
+    # by default on 127.0.0.1:8000
+    # should be made accessible via reverse proxy 
+    # under my.domain.tld
     gunicorn NaiveHIS.wsgi
     
 

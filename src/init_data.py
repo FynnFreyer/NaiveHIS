@@ -282,17 +282,24 @@ def init_data():
     )
 
     doctors = [
-        (koch, koch_quals),
-        (hippocrates, hippocrates_quals),
-        (avicenna, avicenna_quals),
-        (bingen, bingen_quals),
-        (fleming, fleming_quals)
+        koch,
+        hippocrates,
+        avicenna,
+        bingen,
+        fleming,
     ]
 
-    for doctor, quals in doctors:
-        doctor.save()
-        for qual in quals:
-            qual.save()
+    save_objs(doctors)
+
+    quals = [
+        *koch_quals,
+        *hippocrates_quals,
+        *avicenna_quals,
+        *bingen_quals,
+        *fleming_quals,
+    ]
+
+    save_objs(quals)
 
     hurtig = GeneralPersonnel(
         department=ops,
@@ -353,6 +360,16 @@ def init_data():
 
     administrators = [gecko, durstig]
     save_objs(administrators)
+
+    users = [
+        *nurses,
+        *doctors,
+        *transport,
+        *administrators,
+    ]
+
+    for user in users:
+        user.set_password('test')
 
     case_rbg = Case(
         patient=rbg,
