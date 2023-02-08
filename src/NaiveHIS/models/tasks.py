@@ -23,7 +23,7 @@ class Case(CloseableMixin):
 
     @property
     def last_room(self) -> Optional['Room']:
-        closed_transports = TransportOrder.objects.closed_objects.filter(regarding__regarding=self)
+        closed_transports = TransportOrder.objects.closed_objects.filter(case=self)
 
         if closed_transports:
             last = closed_transports.order_by('-closed_at')[0]
@@ -33,7 +33,7 @@ class Case(CloseableMixin):
 
     @property
     def next_room(self) -> Optional['Room']:
-        open_transports = TransportOrder.objects.open_objects.filter(regarding__regarding=self)
+        open_transports = TransportOrder.objects.open_objects.filter(case=self)
 
         if open_transports:
             next = open_transports.order_by('requested_arrival')[0]
