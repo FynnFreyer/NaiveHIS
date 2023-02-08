@@ -3,12 +3,11 @@ from typing import Literal
 PermType = Literal['view', 'change', 'delete', 'create']
 
 _view_perms = (
-    # all model view permissions
+    # all relevant model view permissions
     'NaiveHIS.view_act',
     'NaiveHIS.view_department',
     'NaiveHIS.view_patient',
     'NaiveHIS.view_room',
-    'NaiveHIS.view_hisaccount',
     'NaiveHIS.view_doctor',
     'NaiveHIS.view_transferorder',
     'NaiveHIS.view_departmentqualifications',
