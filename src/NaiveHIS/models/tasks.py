@@ -78,7 +78,7 @@ class Order(CloseableMixin):
 
     issued_by: HISAccount = models.ForeignKey(to=HISAccount, on_delete=models.DO_NOTHING,
                                               related_name='%(class)s_issuer', verbose_name=_('Auftraggeber'))
-    assigned_to: HISAccount = models.ForeignKey(to=HISAccount, on_delete=models.DO_NOTHING, null=True,
+    assigned_to: HISAccount = models.ForeignKey(to=HISAccount, on_delete=models.DO_NOTHING, blank=True, null=True,
                                                 related_name='%(class)s_assignee', verbose_name=_('Auftragnehmer'))
 
     assigned_at: datetime = models.DateTimeField(blank=True, null=True, verbose_name=_('Zuweisungszeitpunkt'))

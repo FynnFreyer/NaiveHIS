@@ -76,7 +76,8 @@ def generate_order_fieldsets(*fields: tuple[str, ...]):
             'classes': ('wide',),
             'fields': (
                 ('issued_by', 'case'),
-                ('assigned_to', 'assigned_at'),
+                ('assigned_to',),
+                ('assigned_at',),
                 *fields,
                 ('closed_at',),
             )
@@ -109,7 +110,8 @@ class TransportOrderAdmin(OrderAdmin):
         form = super().get_form(request, obj, **kwargs)
 
         transport_personnel = GeneralPersonnel.objects.filter(function='transport')
-        form.base_fields['assigned_to'] = ModelChoiceField(queryset=transport_personnel)
+        form.base_fields['assigned_to'] = ModelChoiceField(queryset=transport_personnel,
+                                                           required=False, label=_('Auftragnehmer'))
 
         return form
 
