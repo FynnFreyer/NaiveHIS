@@ -23,7 +23,7 @@ Here are basic commands to get you started.
     # set up the env file
     echo SECRET_KEY=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 64) >> .env
     echo PROD=True >> .env
-    echo HOST=my.domain.tld >> .env
+    echo HOST=my.domain.tld >> .env  # amend domain accordingly
 
     # migrate the db
     python manage.py makemigrations
